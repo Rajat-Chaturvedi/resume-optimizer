@@ -24,11 +24,36 @@ function classifyImportance(keyword: Keyword, rank: number): KeywordGap["importa
   return "nice-to-have";
 }
 
+/**
+ * Scores a structured resume as the exporter will render it: single column, no
+ * tables, no graphics, standard fonts.
+ */
+export async function verifyResume(resume: StructuredResume, jdText: string): Promise<GapReport> {
+  const text = resumeToPlainText(resume);
+  return buildGapReport(
+    text,
+    jdText,
+    {
+      source: "docx",
+      pageCount: Math.max(1, Math.round(text.length / 3500)),
+      hasImages: false,
+      hasTables: false,
+      multiColumn: false,
+      nonStandardFonts: [],
+      embeddedFonts: [],
+      charCount: text.length,
+    },
+    resume,
+    { useLlm: false }
+  );
+}
+
 export async function buildGapReport(
   resumeText: string,
   jdText: string,
   signals: ExtractedDocument["signals"],
-  resume: StructuredResume
+  resume: StructuredResume,
+  options: { useLlm?: boolean } = {}
 ): Promise<GapReport> {
   const jdKeywords = extractKeywords(focusRequirements(jdText), 55);
   const resumeHaystack = normalise(`${resumeText}\n${resumeToPlainText(resume)}`);
@@ -63,7 +88,7 @@ export async function buildGapReport(
   let summary = `Keyword coverage against the job description is ${keywordCoverage}% with ${missing.length} unmatched terms; ATS structural compliance scores ${atsScore}/100.`;
   let usedLlm = false;
 
-  if (llmEnabled()) {
+  if (options.useLlm !== false && llmEnabled()) {
     const llm = await llmJson<{
       summary?: string;
       weakSections?: { section: string; severity: string; issue: string; recommendation: string }[];

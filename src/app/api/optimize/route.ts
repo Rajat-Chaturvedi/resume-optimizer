@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { buildGapReport } from "@/lib/gapAnalysis";
+import { verifyResume } from "@/lib/gapAnalysis";
 import { optimiseResume } from "@/lib/optimizer";
-import { resumeToPlainText } from "@/lib/resumeParser";
 import type { GapReport, StructuredResume } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -25,25 +24,7 @@ export async function POST(request: Request) {
       : [];
 
     const result = await optimiseResume(resume, report, jdText, confirmed);
-    const optimisedText = resumeToPlainText(result.resume);
-
-    // Re-score against the layout the exporter actually produces: single column,
-    // no tables, no graphics, standard fonts.
-    const verification = await buildGapReport(
-      optimisedText,
-      jdText,
-      {
-        source: "docx",
-        pageCount: Math.max(1, Math.round(optimisedText.length / 3500)),
-        hasImages: false,
-        hasTables: false,
-        multiColumn: false,
-        nonStandardFonts: [],
-        embeddedFonts: [],
-        charCount: optimisedText.length,
-      },
-      result.resume
-    );
+    const verification = await verifyResume(result.resume, jdText);
 
     return NextResponse.json({ ...result, verification });
   } catch (error) {

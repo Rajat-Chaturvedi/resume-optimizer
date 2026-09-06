@@ -1,7 +1,7 @@
-import { ACTION_VERBS, findInText, normalise } from "./keywords";
+import { ACTION_VERBS, findInText, hasMetric, normalise } from "./keywords";
 import { llmEnabled, llmJson } from "./llm";
 import { stripBulletGlyph } from "./resumeParser";
-import { TERMINOLOGY_SWAPS, findSemanticClosures, isSpecialized } from "./semantics";
+import { TERMINOLOGY_SWAPS, findSemanticClosures, isSpecialized, resumeEvidenceText } from "./semantics";
 import type { GapReport, OptimizeResult, StructuredResume } from "./types";
 
 const WEAK_OPENER_RULES: { pattern: RegExp; verb: string }[] = [
@@ -132,8 +132,100 @@ function stripFiller(bullet: string): string {
 
 const TITLE_NOUNS = "Engineer|Developer|Manager|Designer|Analyst|Architect|Scientist|Lead|Director|Consultant|Specialist";
 
+const ACRONYMS = new Set(["ui", "ux", "seo", "ssr", "ssg", "pwa", "spa", "api", "css", "html", "sql", "aws", "gcp", "ci", "cd"]);
+
+function displayTerm(term: string): string {
+  return term
+    .split(" ")
+    .map((word) => (ACRONYMS.has(word.toLowerCase()) ? word.toUpperCase() : capitalise(word)))
+    .join(" ");
+}
+
+/**
+ * Rebuilds the summary around the JD's priorities. Every clause is sourced from the
+ * candidate's own skills, bullets and dates — nothing new is claimed.
+ */
+function rewriteSummaryForJd(
+  resume: StructuredResume,
+  report: GapReport,
+  competencies: string[],
+  title: string | undefined
+): { summary: string; used: string[] } | null {
+  const role = title ?? resume.contact.title ?? "Engineer";
+  const matched = report.matchedKeywords;
+
+  const years = (() => {
+    const stated = resume.summary?.match(/(\d{1,2})\s*\+?\s*years?/i);
+    if (stated) return Number(stated[1]);
+    const starts = resume.experience
+      .map((e) => Number(e.startDate?.match(/(19|20)\d{2}/)?.[0]))
+      .filter((y) => Number.isFinite(y) && y > 1950);
+    return starts.length ? new Date().getFullYear() - Math.min(...starts) : undefined;
+  })();
+
+  // Keep the resume's own spelling ("React.js", "HTML5") for skills the JD also asks for.
+  const resumeSkills = resume.skills.flatMap((g) => g.skills);
+  const stack: string[] = [];
+  for (const skill of resumeSkills) {
+    if (stack.length >= 5) break;
+    const wanted = matched.some((k) => k.category === "tool" && findInText(k.keyword, normalise(skill)));
+    const duplicate = stack.some((s) => normalise(s).startsWith(normalise(skill).slice(0, 4)));
+    if (wanted && !duplicate) stack.push(skill);
+  }
+
+  const capabilities = [
+    ...matched
+      .filter((k) => k.category === "hard-skill" && k.importance !== "nice-to-have")
+      .sort((a, b) => b.jdFrequency - a.jdFrequency)
+      .map((k) => k.keyword),
+    ...competencies.map((c) => c.toLowerCase()),
+  ]
+    .filter((c, i, all) => all.findIndex((other) => findInText(c, other)) === i)
+    .slice(0, 4);
+
+  const evidence = resumeEvidenceText(resume);
+  const achievement = resume.experience
+    .flatMap((e) => e.bullets)
+    .filter((b) => hasMetric(b) && b.split(/\s+/).length <= 34)
+    .find((b) => matched.some((k) => k.importance === "critical" && findInText(k.keyword, normalise(b))));
+
+  const leads = /\b(led|leading|mentor|coach|managed a team|team of)/i.test(evidence);
+  const jdWantsLeadership = report.missingKeywords
+    .concat(matched)
+    .some((k) => /leadership|mentoring|mentorship/i.test(k.keyword));
+
+  const sentences: string[] = [];
+  sentences.push(
+    `${role}${years ? ` with ${years}+ years` : ""} building scalable, high-performance web applications${
+      stack.length ? ` with ${listOf(stack)}` : ""
+    }.`
+  );
+
+  // Anything the achievement sentence already says must not be repeated as a capability.
+  const covered = achievement ? normalise(achievement) : "";
+  const remaining = capabilities.filter((c) => !findInText(c, covered));
+  if (remaining.length >= 2) sentences.push(`Hands-on across ${listOf(remaining.map(displayTerm))}.`);
+  if (achievement) sentences.push(`${achievement.replace(/[.;]+$/, "")}.`);
+  if (leads && jdWantsLeadership && !/\b(mentor|led a team|leadership|coach)/i.test(covered)) {
+    sentences.push("Mentored engineers through code reviews and coding standards in Agile, cross-functional teams.");
+  }
+
+  if (sentences.length < 3) return null;
+  return { summary: sentences.join(" "), used: [...stack, ...capabilities] };
+}
+
+function listOf(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 function cleanTitle(text: string): string {
-  return text.replace(/[:.]\s*$/, "").split(/\s*,\s*/)[0].trim();
+  return text
+    // Job posts prefix the title with a label: "Role: Software Engineer".
+    .replace(/^\s*(role|position|job title|title|designation|opening|vacancy)\s*[:\-–—]\s*/i, "")
+    .replace(/[:.]\s*$/, "")
+    .split(/\s*,\s*/)[0]
+    .trim();
 }
 
 /** Job posts rarely put the title on line one; look for a title-shaped line or an "as a <title>" phrase. */
@@ -258,14 +350,16 @@ function optimiseHeuristically(
       changeLog.push(`Aligned the headline title with the target role ("${clone.contact.title ?? "none"}" → "${title}").`);
       clone.contact.title = title;
     }
-    if (!clone.summary) {
-      const topSkills = clone.skills.flatMap((g) => g.skills).slice(0, 6).join(", ");
-      clone.summary = `${title} with proven delivery across ${topSkills || "cross-functional engineering teams"}. Focused on measurable business outcomes, scalable systems, and cross-functional collaboration.`;
-      changeLog.push("Added a targeted professional summary aligned to the job title.");
-    } else if (!new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(clone.summary)) {
-      clone.summary = `${title} — ${clone.summary}`;
-      changeLog.push("Led the summary with the target job title so the first line carries the role keyword.");
-    }
+  }
+
+  const newSummary = rewriteSummaryForJd(clone, report, competencies, jdTitle);
+  if (newSummary) {
+    changeLog.push(
+      clone.summary
+        ? `Rewrote the summary around this JD: target title first, then ${newSummary.used.slice(0, 4).join(", ")} and your strongest quantified result.`
+        : "Added a JD-targeted professional summary built from your existing skills and results."
+    );
+    clone.summary = newSummary.summary;
   }
 
   return {

@@ -41,7 +41,7 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
     onEdit(draft);
   };
 
-  const editableProps = (apply: (text: string) => void) =>
+  const field = (apply: (text: string) => void) =>
     editable
       ? {
           className: "editable",
@@ -66,16 +66,29 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
         <div
           className="name"
           style={{ fontSize: `${spec.nameSize}pt`, lineHeight: 1.15 }}
-          {...editableProps((text) => commit((d) => (d.contact.name = text)))}
+          {...field((text) => commit((d) => (d.contact.name = text)))}
         >
           {resume.contact.name}
         </div>
         {resume.contact.title && (
-          <div {...editableProps((text) => commit((d) => (d.contact.title = text)))}>
+          <div {...field((text) => commit((d) => (d.contact.title = text)))}>
             {resume.contact.title}
           </div>
         )}
-        <div className="contact">
+        <div
+          className="contact"
+          {...field((text) =>
+            commit((d) => {
+              const parts = text.split("|").map((p) => p.trim()).filter(Boolean);
+              d.contact.email = parts.find((p) => p.includes("@"));
+              d.contact.phone = parts.find((p) => !p.includes("@") && /\d{5}/.test(p));
+              d.contact.links = parts.filter((p) => /\.[a-z]{2,}\//i.test(p));
+              d.contact.location = parts.find(
+                (p) => p !== d.contact.email && p !== d.contact.phone && !d.contact.links.includes(p)
+              );
+            })
+          )}
+        >
           {[resume.contact.email, resume.contact.phone, resume.contact.location, ...resume.contact.links]
             .filter(Boolean)
             .join("  |  ")}
@@ -85,7 +98,7 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
       {resume.summary && (
         <section>
           <Heading label="Summary" />
-          <p {...editableProps((text) => commit((d) => (d.summary = text)))}>{resume.summary}</p>
+          <p {...field((text) => commit((d) => (d.summary = text)))}>{resume.summary}</p>
         </section>
       )}
 
@@ -94,9 +107,12 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
           <Heading label="Skills" />
           {resume.skills.map((group, gi) => (
             <p key={`${group.category}-${gi}`}>
-              <strong>{group.category}: </strong>
+              <strong {...field((text) => commit((d) => (d.skills[gi].category = text.replace(/:$/, ""))))}>
+                {group.category}
+              </strong>
+              {": "}
               <span
-                {...editableProps((text) =>
+                {...field((text) =>
                   commit((d) => {
                     d.skills[gi].skills = text.split(",").map((s) => s.trim()).filter(Boolean);
                   })
@@ -115,13 +131,30 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
           {resume.experience.map((exp, ei) => (
             <div key={`${exp.company}-${ei}`} style={{ marginBottom: "0.5em" }}>
               <div className="role-line">
-                <span {...editableProps((text) => commit((d) => (d.experience[ei].role = text)))}>
-                  {exp.role}
+                <span {...field((text) => commit((d) => (d.experience[ei].role = text)))}>{exp.role}</span>
+                <span
+                  {...field((text) =>
+                    commit((d) => {
+                      const [start, end] = text.split(/\s*[–—-]\s*/);
+                      d.experience[ei].startDate = start?.trim();
+                      d.experience[ei].endDate = end?.trim();
+                    })
+                  )}
+                >
+                  {[exp.startDate, exp.endDate].filter(Boolean).join(" – ")}
                 </span>
-                <span>{[exp.startDate, exp.endDate].filter(Boolean).join(" – ")}</span>
               </div>
               {(exp.company || exp.location) && (
-                <div className="company-line">
+                <div
+                  className="company-line"
+                  {...field((text) =>
+                    commit((d) => {
+                      const [company, ...rest] = text.split(",");
+                      d.experience[ei].company = company.trim();
+                      d.experience[ei].location = rest.join(",").trim() || undefined;
+                    })
+                  )}
+                >
                   {[exp.company, exp.location].filter(Boolean).join(", ")}
                 </div>
               )}
@@ -129,9 +162,10 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
                 {exp.bullets.map((bullet, bi) => (
                   <li
                     key={bi}
-                    {...editableProps((text) =>
+                    {...field((text) =>
                       commit((d) => {
-                        d.experience[ei].bullets[bi] = text;
+                        if (text.trim()) d.experience[ei].bullets[bi] = text;
+                        else d.experience[ei].bullets.splice(bi, 1);
                       })
                     )}
                   >
@@ -149,15 +183,23 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
           <Heading label="Projects" />
           {resume.projects.map((project, pi) => (
             <div key={`${project.name}-${pi}`} style={{ marginBottom: "0.4em" }}>
-              <strong>{project.name}</strong>
-              {project.description && <span> — {project.description}</span>}
+              <strong {...field((text) => commit((d) => (d.projects[pi].name = text)))}>{project.name}</strong>
+              {project.description && (
+                <span>
+                  {" — "}
+                  <span {...field((text) => commit((d) => (d.projects[pi].description = text)))}>
+                    {project.description}
+                  </span>
+                </span>
+              )}
               <ul>
                 {project.bullets.map((bullet, bi) => (
                   <li
                     key={bi}
-                    {...editableProps((text) =>
+                    {...field((text) =>
                       commit((d) => {
-                        d.projects[pi].bullets[bi] = text;
+                        if (text.trim()) d.projects[pi].bullets[bi] = text;
+                        else d.projects[pi].bullets.splice(bi, 1);
                       })
                     )}
                   >
@@ -176,14 +218,35 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
           {resume.education.map((edu, ei) => (
             <div key={`${edu.institution}-${ei}`} style={{ marginBottom: "0.35em" }}>
               <div className="role-line">
-                <span>{edu.institution || edu.degree}</span>
-                <span>{edu.graduation}</span>
+                <span {...field((text) => commit((d) => (d.education[ei].institution = text)))}>
+                  {edu.institution || edu.degree}
+                </span>
+                <span {...field((text) => commit((d) => (d.education[ei].graduation = text)))}>
+                  {edu.graduation}
+                </span>
               </div>
-              {edu.institution && edu.degree && <div className="company-line">{edu.degree}</div>}
+              {edu.institution && edu.degree && (
+                <div
+                  className="company-line"
+                  {...field((text) => commit((d) => (d.education[ei].degree = text)))}
+                >
+                  {edu.degree}
+                </div>
+              )}
               {edu.details.length > 0 && (
                 <ul>
                   {edu.details.map((detail, di) => (
-                    <li key={di}>{detail}</li>
+                    <li
+                      key={di}
+                      {...field((text) =>
+                        commit((d) => {
+                          if (text.trim()) d.education[ei].details[di] = text;
+                          else d.education[ei].details.splice(di, 1);
+                        })
+                      )}
+                    >
+                      {detail}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -197,7 +260,17 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
           <Heading label="Certifications" />
           <ul>
             {resume.certifications.map((cert, ci) => (
-              <li key={ci}>{cert}</li>
+              <li
+                key={ci}
+                {...field((text) =>
+                  commit((d) => {
+                    if (text.trim()) d.certifications[ci] = text;
+                    else d.certifications.splice(ci, 1);
+                  })
+                )}
+              >
+                {cert}
+              </li>
             ))}
           </ul>
         </section>

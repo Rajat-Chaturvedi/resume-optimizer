@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import GapReportPanel from "@/components/GapReportPanel";
 import OptimizationSummary from "@/components/OptimizationSummary";
 import ResumePreview from "@/components/ResumePreview";
 import TemplateGallery from "@/components/TemplateGallery";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { getTemplate, type TemplateId } from "@/lib/templates";
 import type { GapReport, OptimizeResult, StructuredResume } from "@/lib/types";
 
@@ -28,10 +29,44 @@ export default function Home() {
   const [templateId, setTemplateId] = useState<TemplateId>("faang-standard");
   const [view, setView] = useState<"optimized" | "original">("optimized");
   const [zoom, setZoom] = useState(0.8);
+  const [liveReport, setLiveReport] = useState<GapReport | null>(null);
+  const [rescoring, setRescoring] = useState(false);
 
   const spec = useMemo(() => getTemplate(templateId), [templateId]);
   const previewResume =
     view === "original" ? analysis?.resume ?? null : editedResume ?? optimized?.resume ?? analysis?.resume ?? null;
+
+  // Preview edits re-score against the JD so the metrics track what the user typed.
+  useEffect(() => {
+    if (!editedResume || !analysis || !optimized) return;
+    if (editedResume === optimized.resume) {
+      setLiveReport(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setRescoring(true);
+      try {
+        const res = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ resume: editedResume, jdText: analysis.jdText }),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (res.ok) setLiveReport(data.report as GapReport);
+      } catch {
+        /* superseded by a newer edit */
+      } finally {
+        setRescoring(false);
+      }
+    }, 700);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [editedResume, analysis, optimized]);
 
   async function runAnalysis(): Promise<AnalyzeResponse | null> {
     const file = fileRef.current?.files?.[0];
@@ -143,12 +178,15 @@ export default function Home() {
 
   return (
     <main className="shell">
-      <header className="masthead">
-        <h1>Resume-to-JD Optimizer</h1>
-        <p>
-          Upload a resume and a job description to get a keyword/qualification gap report, an ATS compliance
-          audit, a rewritten FAANG-style resume, and ATS-safe PDF/DOCX exports.
-        </p>
+      <header className="masthead masthead-row">
+        <div>
+          <h1>Resume-to-JD Optimizer</h1>
+          <p>
+            Upload a resume and a job description to get a keyword/qualification gap report, an ATS compliance
+            audit, a rewritten FAANG-style resume, and ATS-safe PDF/DOCX exports.
+          </p>
+        </div>
+        <ThemeSwitcher />
       </header>
 
       <div className="layout">
@@ -198,13 +236,16 @@ export default function Home() {
             <>
               <OptimizationSummary
                 before={analysis!.report}
-                result={optimized}
+                result={liveReport ? { ...optimized, verification: liveReport } : optimized}
                 busy={busy !== null}
                 onConfirmSkills={(skills) => {
                   void runOptimization(analysis, skills).then(() => setStage(null));
                 }}
               />
-              <GapReportPanel report={optimized.verification} title="3 · Report after optimization" />
+              <GapReportPanel
+                report={liveReport ?? optimized.verification}
+                title={liveReport ? "3 · Report after your edits" : "3 · Report after optimization"}
+              />
             </>
           )}
         </div>
@@ -266,16 +307,29 @@ export default function Home() {
             )}
 
             {previewResume ? (
-              <div className="preview-wrap">
-                <div style={{ height: `calc(11in * ${zoom})` }}>
-                  <ResumePreview
-                    resume={previewResume}
-                    spec={spec}
-                    zoom={zoom}
-                    onEdit={view === "optimized" && optimized ? setEditedResume : undefined}
-                  />
+              <>
+                {view === "optimized" && optimized && (
+                  <p className="hint" style={{ margin: "0 0 10px" }}>
+                    Click any line to edit it — name, title, contact, skills, dates, bullets, projects, education.
+                    Metrics above refresh automatically.{" "}
+                    {rescoring && (
+                      <span className="live-badge">
+                        <span className="spinner" /> re-scoring
+                      </span>
+                    )}
+                  </p>
+                )}
+                <div className="preview-wrap">
+                  <div style={{ height: `calc(11in * ${zoom})` }}>
+                    <ResumePreview
+                      resume={previewResume}
+                      spec={spec}
+                      zoom={zoom}
+                      onEdit={view === "optimized" && optimized ? setEditedResume : undefined}
+                    />
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
               <p className="hint" style={{ margin: 0 }}>
                 Run an analysis to see the live preview. Once optimized, click any bullet in the preview to edit it
