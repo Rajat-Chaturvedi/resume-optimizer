@@ -44,14 +44,14 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
     { label: OPTIMIZER_PANEL.rowAts, before: atsScore(before), after: atsScore(after) },
     {
       label: OPTIMIZER_PANEL.rowNoMetrics,
-      before: countBulletIssue(before, "quantified"),
-      after: countBulletIssue(after, "quantified"),
+      before: before.bulletStats.withoutMetric,
+      after: after.bulletStats.withoutMetric,
       lowerIsBetter: true,
     },
     {
       label: OPTIMIZER_PANEL.rowPassive,
-      before: countBulletIssue(before, "passive"),
-      after: countBulletIssue(after, "passive"),
+      before: before.bulletStats.passiveOpeners,
+      after: after.bulletStats.passiveOpeners,
       lowerIsBetter: true,
     },
   ];
@@ -244,13 +244,4 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
       )}
     </div>
   );
-}
-
-function countBulletIssue(report: GapReport, kind: "quantified" | "passive"): number {
-  const finding = report.weakSections.find(
-    (f) =>
-      f.section === "Experience" &&
-      (kind === "quantified" ? f.issue.includes("no quantified") : f.issue.includes("passive phrasing"))
-  );
-  return finding ? Number(finding.issue.match(/\d+/)?.[0] ?? 0) : 0;
 }

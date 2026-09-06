@@ -1,4 +1,4 @@
-import { analyseSections, runAtsChecks, scoreFromChecks } from "./ats";
+import { analyseSections, collectBulletStats, runAtsChecks, scoreFromChecks } from "./ats";
 import { LLM } from "@/constants/config";
 import type { ExtractedDocument } from "./extract";
 import { extractKeywords, findInText, focusRequirements, normalise, type Keyword } from "./keywords";
@@ -151,6 +151,7 @@ export async function buildGapReport(
     weakSections,
     formattingIssues,
     atsChecks,
+    bulletStats: collectBulletStats(resume),
     summary,
     usedLlm,
   };

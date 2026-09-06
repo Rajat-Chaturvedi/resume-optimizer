@@ -75,6 +75,12 @@ export type AtsCheck = {
   detail: string;
 };
 
+export type BulletStats = {
+  total: number;
+  withoutMetric: number;
+  passiveOpeners: number;
+};
+
 export type GapReport = {
   matchScore: number;
   keywordCoverage: number;
@@ -83,6 +89,7 @@ export type GapReport = {
   weakSections: SectionFinding[];
   formattingIssues: AtsCheck[];
   atsChecks: AtsCheck[];
+  bulletStats: BulletStats;
   summary: string;
   usedLlm: boolean;
 };

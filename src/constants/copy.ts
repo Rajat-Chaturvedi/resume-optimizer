@@ -137,6 +137,11 @@ export const METRICS_WIZARD = {
   apply: (count: number) => (count ? `Apply to ${count} bullet${count === 1 ? "" : "s"}` : "Apply"),
   cancel: "Cancel",
   pending: (count: number) => `${count} row(s) still have blanks and will be skipped.`,
+  appliedTitle: "Metrics added",
+  applied: (count: number) => `Added a metric to ${count} bullet${count === 1 ? "" : "s"}. The report above has been re-scored.`,
+  remaining: (count: number) => `${count} bullet${count === 1 ? "" : "s"} still without a figure.`,
+  allDone: "Every experience bullet now carries a figure. Edit any of them in the preview before exporting.",
+  continueCta: "Suggest metrics for the rest",
 } as const;
 
 export const THEME_SWITCHER_LABEL = "Colour theme";

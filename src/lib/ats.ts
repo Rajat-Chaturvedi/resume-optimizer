@@ -1,7 +1,17 @@
 import type { ExtractedDocument } from "./extract";
 import { detectedSections } from "./resumeParser";
 import { detectWeakOpeners, hasMetric, startsWithActionVerb } from "./keywords";
-import type { AtsCheck, SectionFinding, StructuredResume } from "./types";
+import type { AtsCheck, BulletStats, SectionFinding, StructuredResume } from "./types";
+
+/** Counted regardless of whether a finding is raised, so the UI can show real deltas. */
+export function collectBulletStats(resume: StructuredResume): BulletStats {
+  const bullets = resume.experience.flatMap((e) => e.bullets);
+  return {
+    total: bullets.length,
+    withoutMetric: bullets.filter((b) => !hasMetric(b)).length,
+    passiveOpeners: bullets.filter((b) => detectWeakOpeners(b)).length,
+  };
+}
 
 /**
  * Checks encode publicly documented parsing behaviour of mainstream ATS platforms

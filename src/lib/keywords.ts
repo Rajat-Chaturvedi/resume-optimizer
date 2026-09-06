@@ -317,9 +317,25 @@ export function detectWeakOpeners(bullet: string): string | undefined {
 }
 
 export function hasMetric(bullet: string): boolean {
-  return /(\d+(\.\d+)?\s*(%|x\b|k\b|m\b|bn\b|million|billion|hours?|days?|weeks?|months?|users?|customers?|requests?|ms\b|seconds?|qps|rps|tps))|(\$\s?\d)|(\d{2,})/i.test(
-    bullet
-  );
+  if (/(\$\s?\d)|(\d+(\.\d+)?\s*%)/.test(bullet)) return true;
+  if (
+    /\d+(\.\d+)?\s*(x\b|k\b|m\b|bn\b|million|billion|hours?|days?|weeks?|months?|users?|customers?|requests?|ms\b|seconds?|qps|rps|tps)/i.test(
+      bullet
+    )
+  ) {
+    return true;
+  }
+  // Counted work items read as metrics too: "6 engineers", "6 product surfaces".
+  if (
+    /\d+\s+(\w+\s+){0,2}(engineers?|developers?|teams?|services?|screens?|endpoints?|sprints?|surfaces?|breakpoints?|releases?|defects?|pages?|apps?|applications?|features?|components?|integrations?|clients?|stores?|markets?|countries|gateways?|libraries|modules?)/i.test(
+      bullet
+    )
+  ) {
+    return true;
+  }
+  // "led a team of 8"
+  if (/\b(team|group|squad|crew|cohort)\s+of\s+\d+/i.test(bullet)) return true;
+  return /\d{2,}/.test(bullet);
 }
 
 export function startsWithActionVerb(bullet: string): boolean {

@@ -245,15 +245,15 @@ export default function Home() {
                   void runOptimization(analysis, optimized.confirmedSkills, mode).then(() => setStage(null));
                 }}
               />
-              <GapReportPanel
-                report={liveReport ?? optimized.verification}
-                title={liveReport ? REPORT_PANEL.editedTitle : REPORT_PANEL.optimizedTitle}
-              />
-
               <MetricsWizard
                 resume={editedResume ?? optimized.resume}
                 busy={busy !== null}
                 onApply={setEditedResume}
+              />
+
+              <GapReportPanel
+                report={liveReport ?? optimized.verification}
+                title={liveReport ? REPORT_PANEL.editedTitle : REPORT_PANEL.optimizedTitle}
               />
             </>
           )}

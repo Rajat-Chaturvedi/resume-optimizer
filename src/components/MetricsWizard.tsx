@@ -37,6 +37,7 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [confirmed, setConfirmed] = useState(false);
+  const [appliedCount, setAppliedCount] = useState(0);
 
   const targets = useMemo<Target[]>(
     () =>
@@ -55,7 +56,17 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
     [resume]
   );
 
-  if (targets.length === 0) return null;
+  if (targets.length === 0) {
+    if (appliedCount === 0) return null;
+    return (
+      <div className="card">
+        <h2>{METRICS_WIZARD.appliedTitle}</h2>
+        <p className="hint" style={{ marginBottom: 0 }}>
+          {METRICS_WIZARD.applied(appliedCount)} {METRICS_WIZARD.allDone}
+        </p>
+      </div>
+    );
+  }
 
   const start = () => {
     // Pre-fill every row with phrasing that matches that bullet and a typical
@@ -71,15 +82,20 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
 
   const apply = () => {
     const next: StructuredResume = JSON.parse(JSON.stringify(resume));
+    let applied = 0;
     for (const [key, value] of ready) {
       const [roleIndex, bulletIndex] = key.split(":").map(Number);
       const bullet = next.experience[roleIndex]?.bullets[bulletIndex];
-      if (bullet) next.experience[roleIndex].bullets[bulletIndex] = withImpact(bullet, value);
+      // Guard against appending the same clause twice on a re-run.
+      if (!bullet || bullet.toLowerCase().includes(value.trim().toLowerCase())) continue;
+      next.experience[roleIndex].bullets[bulletIndex] = withImpact(bullet, value);
+      applied += 1;
     }
     setDrafts({});
     setConfirmed(false);
     setOpen(false);
     setVisible(PAGE_SIZE);
+    setAppliedCount((count) => count + applied);
     onApply(next);
   };
 
@@ -91,14 +107,21 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
       <p className="hint">{METRICS_WIZARD.hint}</p>
 
       {!open ? (
-        <div className="row">
-          <button type="button" className="primary" disabled={busy} onClick={start}>
-            {METRICS_WIZARD.cta}
-          </button>
-          <span className="hint" style={{ margin: 0 }}>
-            {METRICS_WIZARD.skipHint}
-          </span>
-        </div>
+        <>
+          {appliedCount > 0 && (
+            <p className="metric-preview" style={{ marginTop: 0 }}>
+              {METRICS_WIZARD.applied(appliedCount)} {METRICS_WIZARD.remaining(targets.length)}
+            </p>
+          )}
+          <div className="row">
+            <button type="button" className="primary" disabled={busy} onClick={start}>
+              {appliedCount > 0 ? METRICS_WIZARD.continueCta : METRICS_WIZARD.cta}
+            </button>
+            <span className="hint" style={{ margin: 0 }}>
+              {METRICS_WIZARD.skipHint}
+            </span>
+          </div>
+        </>
       ) : (
         <>
           <p className="hint">{METRICS_WIZARD.suggestionHint}</p>
