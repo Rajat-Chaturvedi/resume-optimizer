@@ -261,18 +261,19 @@ export default function Home() {
           </div>
 
           <div className="card">
-            <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-              <h2 style={{ margin: 0 }}>5 · Preview &amp; export</h2>
-              <div className="row">
-                <button type="button" onClick={() => setZoom((z) => Math.max(0.45, +(z - 0.1).toFixed(2)))}>
-                  −
-                </button>
-                <span className="badge">{Math.round(zoom * 100)}%</span>
-                <button type="button" onClick={() => setZoom((z) => Math.min(1.2, +(z + 0.1).toFixed(2)))}>
-                  +
-                </button>
+            <div className="preview-toolbar">
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <h2 style={{ margin: 0 }}>5 · Preview &amp; export</h2>
+                <div className="row">
+                  <button type="button" onClick={() => setZoom((z) => Math.max(0.45, +(z - 0.1).toFixed(2)))}>
+                    −
+                  </button>
+                  <span className="badge">{Math.round(zoom * 100)}%</span>
+                  <button type="button" onClick={() => setZoom((z) => Math.min(1.2, +(z + 0.1).toFixed(2)))}>
+                    +
+                  </button>
+                </div>
               </div>
-            </div>
 
             {analysis && (
               <div className="tabs">
@@ -305,6 +306,7 @@ export default function Home() {
                 </button>
               </div>
             )}
+            </div>
 
             {previewResume ? (
               <>
@@ -320,14 +322,12 @@ export default function Home() {
                   </p>
                 )}
                 <div className="preview-wrap">
-                  <div style={{ height: `calc(11in * ${zoom})`, width: `calc(8.5in * ${zoom})` }}>
-                    <ResumePreview
-                      resume={previewResume}
-                      spec={spec}
-                      zoom={zoom}
-                      onEdit={view === "optimized" && optimized ? setEditedResume : undefined}
-                    />
-                  </div>
+                  <ResumePreview
+                    resume={previewResume}
+                    spec={spec}
+                    zoom={zoom}
+                    onEdit={view === "optimized" && optimized ? setEditedResume : undefined}
+                  />
                 </div>
               </>
             ) : (

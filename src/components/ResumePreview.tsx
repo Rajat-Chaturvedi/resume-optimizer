@@ -24,7 +24,8 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
     lineHeight: spec.lineHeight,
     color: spec.accent,
     padding: `${spec.marginInches}in`,
-    transform: `scale(${zoom})`,
+    // zoom (unlike transform) reflows, so the page keeps its real layout height.
+    zoom,
   };
 
   const headingStyle: CSSProperties = {

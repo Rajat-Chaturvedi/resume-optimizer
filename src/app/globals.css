@@ -185,12 +185,6 @@ a {
   .layout {
     grid-template-columns: 1fr;
   }
-
-  .rail {
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
 }
 
 .card {
@@ -488,8 +482,9 @@ button.primary {
   background: var(--preview-bg);
   border-radius: var(--radius);
   padding: 20px;
-  overflow: auto;
-  max-height: 1100px;
+  /* Narrow columns pan sideways; height is content-driven so no vertical scrollbar. */
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .rail::-webkit-scrollbar {
@@ -512,7 +507,6 @@ button.primary {
   min-height: 11in;
   margin: 0 auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-  transform-origin: top left;
 }
 
 .page h1,
