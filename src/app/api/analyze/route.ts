@@ -5,7 +5,7 @@ import { buildGapReport } from "@/lib/gapAnalysis";
 import { parseResume } from "@/lib/resumeParser";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {

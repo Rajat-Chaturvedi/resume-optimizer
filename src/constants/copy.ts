@@ -1,3 +1,5 @@
+import { UPLOAD } from "./config";
+
 export const APP = {
   name: "Resume-to-JD Optimizer",
   description:
@@ -6,7 +8,7 @@ export const APP = {
 
 export const INPUT_PANEL = {
   title: "1 · Input",
-  hint: "PDF, DOCX, or TXT resume up to 8 MB. Scanned images cannot be parsed by an ATS.",
+  hint: `PDF, DOCX, or TXT resume up to ${UPLOAD.maxBytes / (1024 * 1024)} MB. Scanned images cannot be parsed by an ATS.`,
   resumeLabel: "Resume / CV",
   jdLabel: "Job description",
   jdPlaceholder: "Paste the full job description, including requirements and qualifications…",
