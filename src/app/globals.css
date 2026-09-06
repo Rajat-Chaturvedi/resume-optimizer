@@ -7,6 +7,7 @@
   --text: #e8ecf8;
   --muted: #9aa6c8;
   --accent: #6ea8fe;
+  --on-accent: #07142c;
   --pass: #35c48a;
   --warn: #e6b455;
   --fail: #ef6b6b;
@@ -22,6 +23,7 @@
   --text: #1a2233;
   --muted: #5c6880;
   --accent: #2563eb;
+  --on-accent: #ffffff;
   /* Darkened so tinted chips clear 4.5:1 against their own background. */
   --pass: #0e6b4d;
   --warn: #8a5600;
@@ -37,6 +39,7 @@
   --text: #e6e9ee;
   --muted: #a3adba;
   --accent: #7fd1b9;
+  --on-accent: #10231d;
   --pass: #6fd6ab;
   --warn: #e5b45c;
   --fail: #ff8f8a;
@@ -51,6 +54,7 @@
   --text: #ffffff;
   --muted: #d9d9d9;
   --accent: #ffd400;
+  --on-accent: #000000;
   --pass: #00e676;
   --warn: #ffd400;
   --fail: #ff5252;
@@ -133,7 +137,7 @@ a {
 
 .theme-switcher button.active {
   background: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -270,7 +274,7 @@ button:disabled {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #07142c;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -606,7 +610,7 @@ button.primary {
 
 .tabs button.active {
   background: var(--accent);
-  color: #07142c;
+  color: var(--on-accent);
   border-color: var(--accent);
   font-weight: 600;
 }
