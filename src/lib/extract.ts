@@ -54,6 +54,10 @@ export function assertUploadSafe(file: { size: number; name: string; type: strin
 
 async function extractPdf(buffer: Buffer): Promise<ExtractedDocument> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // pdfjs dynamically imports this bare specifier at runtime; Node's own loader resolves it,
+  // so it must stay a plain string literal or the bundler mishandles it (see next.config.mjs
+  // for the tracing include that ships the file itself).
+  pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
   const doc = await pdfjs.getDocument({
     data: new Uint8Array(buffer),
     useWorkerFetch: false,
