@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { OPTIMIZER_PANEL } from "@/constants/copy";
-import type { GapReport, OptimizeResult } from "@/lib/types";
+import type { GapReport, LengthMode, OptimizeResult } from "@/lib/types";
 
 function atsScore(report: GapReport): number {
   const total = report.atsChecks.reduce(
@@ -26,9 +26,10 @@ type Props = {
   result: OptimizeResult & { verification: GapReport };
   busy: boolean;
   onConfirmSkills: (skills: string[]) => void;
+  onLengthChange: (mode: LengthMode) => void;
 };
 
-export default function OptimizationSummary({ before, result, busy, onConfirmSkills }: Props) {
+export default function OptimizationSummary({ before, result, busy, onConfirmSkills, onLengthChange }: Props) {
   const after = result.verification;
   const [selected, setSelected] = useState<string[]>(result.confirmedSkills ?? []);
 
@@ -111,8 +112,7 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {result.changeLog.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.editsTitle}</h3>
-          <ul className="changelog">
+          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.editsTitle}</h3>          <ul className="changelog">
             {result.changeLog.map((entry, i) => (
               <li key={i}>{entry}</li>
             ))}
@@ -172,6 +172,32 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
           </div>
         </>
       )}
+
+      <h3 style={{ fontSize: 14, margin: "16px 0 4px" }}>{OPTIMIZER_PANEL.lengthTitle}</h3>
+      <p className="hint" style={{ marginBottom: 8 }}>
+        {OPTIMIZER_PANEL.lengthHint}
+      </p>
+      <div className="row">
+        <button
+          type="button"
+          className={result.lengthMode === "as-is" ? "primary" : ""}
+          disabled={busy}
+          onClick={() => onLengthChange("as-is")}
+        >
+          {OPTIMIZER_PANEL.lengthAsIs}
+        </button>
+        <button
+          type="button"
+          className={result.lengthMode === "condense" ? "primary" : ""}
+          disabled={busy}
+          onClick={() => onLengthChange("condense")}
+        >
+          {OPTIMIZER_PANEL.lengthCondense}
+        </button>
+        {result.trimmedBullets > 0 && (
+          <span className="badge">{OPTIMIZER_PANEL.trimmedNote(result.trimmedBullets)}</span>
+        )}
+      </div>
 
       {specializedGaps.length > 0 && (
         <>

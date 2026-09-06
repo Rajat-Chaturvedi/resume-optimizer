@@ -44,6 +44,9 @@ export const REPORT_PANEL = {
     "Generic engineering vocabulary. The optimizer adopts this wording wherever your bullets already demonstrate the capability.",
   matchedTitle: (count: number) => `Matched keywords (${count})`,
   weakTitle: "Weak sections",
+  needsInputTitle: "Needs your numbers",
+  needsInputHint:
+    "The optimizer will not invent metrics. These are the only findings it cannot close for you — click a bullet in the preview to add the real figures.",
   fixPrefix: "Fix:",
   atsTitle: "ATS compliance checks",
   atsHint: "Benchmarked against documented parsing behaviour of Workday, Taleo, Greenhouse, Lever and iCIMS.",
@@ -76,6 +79,12 @@ export const OPTIMIZER_PANEL = {
     "These are specialized technologies the job description asks for that appear nowhere in your resume. The optimizer will never claim them on your behalf. Tick the ones you genuinely have exposure to and re-run — they will be added to your Skills section and worked into the rewrite.",
   confirmCta: "I have experience with these — optimize my resume",
   clearSelection: "Clear selection",
+  lengthTitle: "Resume length",
+  lengthHint:
+    "Two pages is the industry maximum for most roles, but only you know which bullets matter. Condensing drops the lowest-impact ones (no metrics, no JD keywords, oldest roles first) and never rewords them.",
+  lengthAsIs: "Keep every bullet",
+  lengthCondense: "Condense to 2 pages",
+  trimmedNote: (count: number) => `${count} bullet(s) hidden to fit two pages.`,
   noLlmHint: "Running without an LLM key limits rewriting to structural and phrasing fixes. Set",
   noLlmHintTail: "to enable full JD-targeted rewriting of summary and bullets.",
 } as const;

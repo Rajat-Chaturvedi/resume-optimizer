@@ -93,17 +93,36 @@ export default function GapReportPanel({ report, title }: { report: GapReport; t
         </>
       )}
 
-      {report.weakSections.length > 0 && (
+      {report.weakSections.some((f) => !f.requiresUserInput) && (
         <>
           <h3 style={{ fontSize: 14, margin: "16px 0 8px" }}>{REPORT_PANEL.weakTitle}</h3>
-          {report.weakSections.map((finding, i) => (
-            <div key={`${finding.section}-${i}`} className={`finding ${finding.severity}`}>
-              <strong>{finding.section}</strong> — {finding.issue}
-              <div className="rec">
-                {REPORT_PANEL.fixPrefix} {finding.recommendation}
+          {report.weakSections
+            .filter((f) => !f.requiresUserInput)
+            .map((finding, i) => (
+              <div key={`${finding.section}-${i}`} className={`finding ${finding.severity}`}>
+                <strong>{finding.section}</strong> — {finding.issue}
+                <div className="rec">
+                  {REPORT_PANEL.fixPrefix} {finding.recommendation}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+        </>
+      )}
+
+      {report.weakSections.some((f) => f.requiresUserInput) && (
+        <>
+          <h3 style={{ fontSize: 14, margin: "16px 0 4px" }}>{REPORT_PANEL.needsInputTitle}</h3>
+          <p className="hint" style={{ marginBottom: 8 }}>
+            {REPORT_PANEL.needsInputHint}
+          </p>
+          {report.weakSections
+            .filter((f) => f.requiresUserInput)
+            .map((finding, i) => (
+              <div key={`${finding.section}-input-${i}`} className="finding low">
+                <strong>{finding.section}</strong> — {finding.issue}
+                <div className="rec">{finding.recommendation}</div>
+              </div>
+            ))}
         </>
       )}
 

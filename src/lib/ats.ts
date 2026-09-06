@@ -161,7 +161,9 @@ export function analyseSections(resume: StructuredResume): SectionFinding[] {
         section: "Experience",
         severity: "high",
         issue: `${noMetric.length} of ${bullets.length} bullets contain no quantified outcome.`,
-        recommendation: "Rewrite using the FAANG pattern: action verb + what you did + measurable impact (%, $, latency, scale).",
+        recommendation:
+          "Add the numbers only you know (%, $, latency, users, scale) — click any bullet in the preview to edit it.",
+        requiresUserInput: true,
       });
     }
 

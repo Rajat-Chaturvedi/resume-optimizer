@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import { OPTIMIZER } from "@/constants/config";
 import { verifyResume } from "@/lib/gapAnalysis";
 import { optimiseResume } from "@/lib/optimizer";
-import type { GapReport, StructuredResume } from "@/lib/types";
+import type { GapReport, LengthMode, StructuredResume } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
 export async function POST(request: Request) {
   try {
-    const { resume, report, jdText, confirmedSkills } = (await request.json()) as {
+    const { resume, report, jdText, confirmedSkills, lengthMode } = (await request.json()) as {
       resume?: StructuredResume;
       report?: GapReport;
       jdText?: string;
       confirmedSkills?: string[];
+      lengthMode?: LengthMode;
     };
 
     if (!resume || !report || !jdText) {
@@ -29,7 +30,13 @@ export async function POST(request: Request) {
           .slice(0, OPTIMIZER.maxConfirmedSkills)
       : [];
 
-    const result = await optimiseResume(resume, report, jdText, confirmed);
+    const result = await optimiseResume(
+      resume,
+      report,
+      jdText,
+      confirmed,
+      lengthMode === "condense" ? "condense" : "as-is"
+    );
     const verification = await verifyResume(result.resume, jdText);
 
     return NextResponse.json({ ...result, verification });

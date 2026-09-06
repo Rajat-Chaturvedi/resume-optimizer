@@ -63,6 +63,8 @@ export type SectionFinding = {
   severity: "high" | "medium" | "low";
   issue: string;
   recommendation: string;
+  /** True when only the candidate can supply the missing facts (e.g. metrics). */
+  requiresUserInput?: boolean;
 };
 
 export type AtsCheck = {
@@ -85,6 +87,8 @@ export type GapReport = {
   usedLlm: boolean;
 };
 
+export type LengthMode = "as-is" | "condense";
+
 export type OptimizeResult = {
   resume: StructuredResume;
   changeLog: string[];
@@ -93,5 +97,8 @@ export type OptimizeResult = {
   closedSemanticGaps: { keyword: string; label: string }[];
   /** Specialized skills the user explicitly confirmed having. */
   confirmedSkills: string[];
+  lengthMode: LengthMode;
+  /** Bullets dropped by the condense pass, so the UI can explain the trade-off. */
+  trimmedBullets: number;
   usedLlm: boolean;
 };

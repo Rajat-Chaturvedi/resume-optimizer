@@ -1,9 +1,9 @@
 import { LLM } from "@/constants/config";
 import { ACTION_VERBS, findInText, hasMetric, normalise } from "./keywords";
 import { llmEnabled, llmJson } from "./llm";
-import { stripBulletGlyph } from "./resumeParser";
+import { resumeToPlainText, stripBulletGlyph } from "./resumeParser";
 import { TERMINOLOGY_SWAPS, findSemanticClosures, isSpecialized, resumeEvidenceText } from "./semantics";
-import type { GapReport, OptimizeResult, StructuredResume } from "./types";
+import type { GapReport, LengthMode, OptimizeResult, StructuredResume } from "./types";
 
 const WEAK_OPENER_RULES: { pattern: RegExp; verb: string }[] = [
   { pattern: /^responsible for (managing|leading|owning)\s+/i, verb: "Led" },
@@ -83,28 +83,39 @@ function gerundToPast(word: string): string {
   return toPastTense(stem);
 }
 
+/** Picks a lead verb that the rest of the bullet does not already use. */
+function leadVerb(preferred: string, rest: string): string {
+  const used = (verb: string) => new RegExp(`\\b${verb.replace(/ed$|e$/, "")}`, "i").test(rest);
+  if (!used(preferred)) return preferred;
+  return ACTION_VERBS.find((v) => !used(v)) ?? preferred;
+}
+
+function applyWeakOpenerRule(text: string): string {
+  const rule = WEAK_OPENER_RULES.find((r) => r.pattern.test(text));
+  if (!rule) return text;
+
+  const rest = text.replace(rule.pattern, "").trim().replace(/^to\s+/i, "");
+  const [first, ...tail] = rest.split(/\s+/);
+  if (/ing$/i.test(first) && first.length > 4) return [gerundToPast(first), ...tail].join(" ");
+  if (first && /^[a-z]+$/.test(first) && !NON_VERB_STARTERS.has(first)) {
+    return [toPastTense(first), ...tail].join(" ");
+  }
+  return `${leadVerb(rule.verb, rest)} ${rest}`;
+}
+
 function strengthenBullet(bullet: string, index: number): string {
   let out = stripBulletGlyph(bullet).replace(/^(i|we|my team)\s+/i, "");
 
-  const rule = WEAK_OPENER_RULES.find((r) => r.pattern.test(out));
-  if (rule) {
-    const rest = out.replace(rule.pattern, "").trim().replace(/^to\s+/i, "");
-    const [first, ...tail] = rest.split(/\s+/);
-    if (/ing$/i.test(first) && first.length > 4) {
-      out = [gerundToPast(first), ...tail].join(" ");
-    } else if (first && /^[a-z]+$/.test(first) && !NON_VERB_STARTERS.has(first)) {
-      out = [toPastTense(first), ...tail].join(" ");
-    } else {
-      out = `${rule.verb} ${rest}`;
-    }
-  } else {
-    // "Building reusable packages" -> "Built reusable packages": recruiters and ATS
-    // keyword parsers both expect completed, past-tense accomplishments.
-    const [first, ...tail] = out.split(/\s+/);
-    if (/^[A-Za-z]+ing$/.test(first) && first.length > 5 && !NOUN_GERUNDS.has(first.toLowerCase())) {
-      out = [gerundToPast(first), ...tail].join(" ");
-    }
+  // "Building reusable packages" -> "Built reusable packages": recruiters and ATS
+  // keyword parsers both expect completed, past-tense accomplishments.
+  const [lead, ...rest] = out.split(/\s+/);
+  if (/^[A-Za-z]+ing$/.test(lead) && lead.length > 5 && !NOUN_GERUNDS.has(lead.toLowerCase())) {
+    out = [gerundToPast(lead), ...rest].join(" ");
   }
+
+  // Run after the gerund pass: "Working on X" becomes "Worked on X", which is
+  // itself a weak opener that still needs replacing.
+  out = applyWeakOpenerRule(out);
 
   const first = out.split(/\s+/)[0] ?? "";
   if (!/^[A-Za-z]+(ed|s)?$/.test(first)) out = `${ACTION_VERBS[index % ACTION_VERBS.length]} ${out}`;
@@ -220,6 +231,53 @@ function listOf(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
+const CHARS_PER_PAGE = 3500;
+const TARGET_PAGES = 2;
+const MIN_BULLETS_PER_ROLE = 2;
+
+/**
+ * Drops the least relevant bullets until the resume fits two pages. Nothing is
+ * reworded or invented — bullets carrying metrics or JD keywords are kept first,
+ * and recent roles keep more than older ones.
+ */
+function condenseToTargetLength(resume: StructuredResume, report: GapReport): number {
+  const jdTerms = report.matchedKeywords.map((k) => k.keyword);
+  const score = (bullet: string, roleIndex: number) => {
+    const text = normalise(bullet);
+    const keywordHits = jdTerms.filter((term) => findInText(term, text)).length;
+    return (hasMetric(bullet) ? 6 : 0) + Math.min(keywordHits, 4) * 1.5 + Math.max(0, 6 - roleIndex);
+  };
+
+  const ranked = resume.experience
+    .flatMap((exp, roleIndex) =>
+      exp.bullets.map((bullet, bulletIndex) => ({ roleIndex, bulletIndex, value: score(bullet, roleIndex) }))
+    )
+    .sort((a, b) => a.value - b.value);
+
+  const remaining = new Map<number, Set<number>>();
+  resume.experience.forEach((exp, i) => remaining.set(i, new Set(exp.bullets.map((_, j) => j))));
+
+  const budget = CHARS_PER_PAGE * TARGET_PAGES;
+  let length = resumeToPlainText(resume).length;
+  const dropped: { roleIndex: number; bulletIndex: number }[] = [];
+
+  for (const candidate of ranked) {
+    if (length <= budget) break;
+    const kept = remaining.get(candidate.roleIndex);
+    if (!kept || kept.size <= MIN_BULLETS_PER_ROLE) continue;
+    kept.delete(candidate.bulletIndex);
+    dropped.push(candidate);
+    length -= resume.experience[candidate.roleIndex].bullets[candidate.bulletIndex].length + 3;
+  }
+
+  if (!dropped.length) return 0;
+  resume.experience = resume.experience.map((exp, i) => ({
+    ...exp,
+    bullets: exp.bullets.filter((_, j) => remaining.get(i)?.has(j)),
+  }));
+  return dropped.length;
+}
+
 function cleanTitle(text: string): string {
   return text
     // Job posts prefix the title with a label: "Role: Software Engineer".
@@ -259,7 +317,8 @@ function optimiseHeuristically(
   resume: StructuredResume,
   report: GapReport,
   jdTitle: string | undefined,
-  confirmedSkills: string[]
+  confirmedSkills: string[],
+  lengthMode: LengthMode
 ): OptimizeResult {
   const clone: StructuredResume = JSON.parse(JSON.stringify(resume));
   const changeLog: string[] = [];
@@ -291,6 +350,11 @@ function optimiseHeuristically(
       }
       return improved;
     }),
+  }));
+
+  clone.projects = clone.projects.map((project) => ({
+    ...project,
+    bullets: project.bullets.map((b, i) => strengthenBullet(stripFiller(stripBulletGlyph(b)), i)),
   }));
 
   if (rewritten) {
@@ -363,12 +427,21 @@ function optimiseHeuristically(
     clone.summary = newSummary.summary;
   }
 
+  const trimmedBullets = lengthMode === "condense" ? condenseToTargetLength(clone, report) : 0;
+  if (trimmedBullets) {
+    changeLog.push(
+      `Condensed to two pages by dropping ${trimmedBullets} lower-impact bullet(s) — those without metrics or JD keywords, oldest roles first.`
+    );
+  }
+
   return {
     resume: clone,
     changeLog,
     injectedKeywords: [...claimable, ...confirmedSkills],
     closedSemanticGaps: closures,
     confirmedSkills,
+    lengthMode,
+    trimmedBullets,
     usedLlm: false,
   };
 }
@@ -419,10 +492,11 @@ export async function optimiseResume(
   resume: StructuredResume,
   report: GapReport,
   jdText: string,
-  confirmedSkills: string[] = []
+  confirmedSkills: string[] = [],
+  lengthMode: LengthMode = "as-is"
 ): Promise<OptimizeResult> {
   const jdTitle = detectJobTitle(jdText);
-  const heuristic = optimiseHeuristically(resume, report, jdTitle, confirmedSkills);
+  const heuristic = optimiseHeuristically(resume, report, jdTitle, confirmedSkills, lengthMode);
   if (!llmEnabled()) return heuristic;
 
   const semanticGaps = report.missingKeywords.filter((k) => !isSpecialized(k)).map((k) => k.keyword);
@@ -452,12 +526,15 @@ export async function optimiseResume(
   if (!llm?.resume) return heuristic;
 
   const optimised = coerceResume(llm.resume, resume);
+  const trimmedBullets = lengthMode === "condense" ? condenseToTargetLength(optimised, report) : 0;
   return {
     resume: optimised,
     changeLog: llm.changeLog?.length ? llm.changeLog : heuristic.changeLog,
     injectedKeywords: llm.injectedKeywords ?? heuristic.injectedKeywords,
     closedSemanticGaps: findSemanticClosures(report.missingKeywords, optimised),
     confirmedSkills,
+    lengthMode,
+    trimmedBullets,
     usedLlm: true,
   };
 }

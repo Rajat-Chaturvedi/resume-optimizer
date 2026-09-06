@@ -9,7 +9,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { PREVIEW, UPLOAD } from "@/constants/config";
 import { APP, INPUT_PANEL, PREVIEW_PANEL, REPORT_PANEL, TEMPLATE_PANEL, VALIDATION } from "@/constants/copy";
 import { getTemplate, type TemplateId } from "@/lib/templates";
-import type { GapReport, OptimizeResult, StructuredResume } from "@/lib/types";
+import type { GapReport, LengthMode, OptimizeResult, StructuredResume } from "@/lib/types";
 
 type AnalyzeResponse = {
   resume: StructuredResume;
@@ -33,6 +33,7 @@ export default function Home() {
   const [zoom, setZoom] = useState<number>(PREVIEW.defaultZoom);
   const [liveReport, setLiveReport] = useState<GapReport | null>(null);
   const [rescoring, setRescoring] = useState(false);
+  const [lengthMode, setLengthMode] = useState<LengthMode>("as-is");
 
   const spec = useMemo(() => getTemplate(templateId), [templateId]);
   const previewResume =
@@ -105,7 +106,11 @@ export default function Home() {
     }
   }
 
-  async function runOptimization(source: AnalyzeResponse | null = analysis, confirmedSkills: string[] = []) {
+  async function runOptimization(
+    source: AnalyzeResponse | null = analysis,
+    confirmedSkills: string[] = [],
+    mode: LengthMode = lengthMode
+  ) {
     if (!source) return;
     setBusy("optimize");
     setStage(confirmedSkills.length ? INPUT_PANEL.stageConfirming : INPUT_PANEL.stageOptimizing);
@@ -119,6 +124,7 @@ export default function Home() {
           report: source.report,
           jdText: source.jdText,
           confirmedSkills,
+          lengthMode: mode,
         }),
       });
       const data = await res.json();
@@ -232,6 +238,10 @@ export default function Home() {
                 busy={busy !== null}
                 onConfirmSkills={(skills) => {
                   void runOptimization(analysis, skills).then(() => setStage(null));
+                }}
+                onLengthChange={(mode) => {
+                  setLengthMode(mode);
+                  void runOptimization(analysis, optimized.confirmedSkills, mode).then(() => setStage(null));
                 }}
               />
               <GapReportPanel
