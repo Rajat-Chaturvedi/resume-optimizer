@@ -1,3 +1,4 @@
+import { ACTION_VERBS } from "./keywords";
 import type {
   EducationEntry,
   ExperienceEntry,
@@ -152,7 +153,9 @@ function parseExperience(block: string[]): ExperienceEntry[] {
 
     if (BULLET_PREFIX.test(line)) {
       const bullet = tidy(line.replace(BULLET_PREFIX, ""));
-      if (current) current.bullets.push(bullet);
+      // Never drop content that appears before the first parsable role header.
+      current ??= { role: "", company: "", bullets: [] };
+      current.bullets.push(bullet);
       continue;
     }
 
@@ -212,7 +215,7 @@ function parseExperience(block: string[]): ExperienceEntry[] {
     }
   }
   if (current) entries.push(current);
-  return entries.filter((e) => e.role || e.company);
+  return entries.filter((e) => e.role || e.company || e.bullets.length > 0);
 }
 
 const DEGREE_LIKE =
@@ -287,26 +290,53 @@ function parseSkills(block: string[]): SkillGroup[] {
   return groups.filter((g) => g.skills.length > 0);
 }
 
-function parseProjects(block: string[]): ProjectEntry[] {
-  const entries: ProjectEntry[] = [];
-  let current: ProjectEntry | undefined;
+const PROJECT_TITLE = /^([^:]{3,60}):\s+(.+)$/;
+
+/** Merges PDF line wraps so each entry is one logical item. */
+function mergeWrappedLines(block: string[]): { text: string; isBullet: boolean }[] {
+  const items: { text: string; isBullet: boolean }[] = [];
   for (const raw of block) {
     const line = raw.trim();
     if (!line) continue;
+    const previous = items[items.length - 1];
     if (BULLET_PREFIX.test(line)) {
-      current?.bullets.push(tidy(line.replace(BULLET_PREFIX, "")));
-      continue;
+      items.push({ text: tidy(line.replace(BULLET_PREFIX, "")), isBullet: true });
+    } else if (previous && isContinuation(line, previous.text)) {
+      previous.text = tidy(`${previous.text} ${line}`);
+    } else {
+      items.push({ text: tidy(line), isBullet: false });
     }
-    if (current?.bullets.length && isContinuation(line, current.bullets[current.bullets.length - 1])) {
-      current.bullets[current.bullets.length - 1] = tidy(
-        `${current.bullets[current.bullets.length - 1]} ${line}`
-      );
-      continue;
-    }
-    if (current) entries.push(current);
-    const [name, ...desc] = line.split(/\s+[–—|-]\s+/);
-    current = { name: tidy(name), description: tidy(desc.join(" – ")) || undefined, bullets: [] };
   }
+  return items;
+}
+
+function parseProjects(block: string[]): ProjectEntry[] {
+  const entries: ProjectEntry[] = [];
+  let current: ProjectEntry | undefined;
+
+  const open = (name: string, description?: string) => {
+    if (current) entries.push(current);
+    current = { name, description, bullets: [] };
+  };
+
+  for (const item of mergeWrappedLines(block)) {
+    const titled = item.text.match(PROJECT_TITLE);
+    // "Trendify App: Single-handedly built…" is a project, "Built X: faster Y" is a bullet.
+    const isTitle =
+      titled !== null &&
+      titled[1].split(/\s+/).length <= 8 &&
+      !ACTION_VERBS.some((v) => new RegExp(`^${v}\\b`, "i").test(titled[1])) &&
+      !/^[a-z]/.test(titled[1]);
+
+    if (isTitle && titled) open(titled[1].trim(), titled[2].trim());
+    else if (!item.isBullet) {
+      const [name, ...desc] = item.text.split(/\s+[–—|-]\s+/);
+      open(tidy(name), tidy(desc.join(" – ")) || undefined);
+    } else if (current) current.bullets.push(item.text);
+    // A bullet with no project open would otherwise be dropped entirely.
+    else open(item.text);
+  }
+
   if (current) entries.push(current);
   return entries;
 }
