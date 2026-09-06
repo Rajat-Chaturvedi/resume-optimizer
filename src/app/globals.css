@@ -22,9 +22,10 @@
   --text: #1a2233;
   --muted: #5c6880;
   --accent: #2563eb;
-  --pass: #12805c;
-  --warn: #a86a09;
-  --fail: #c62b2b;
+  /* Darkened so tinted chips clear 4.5:1 against their own background. */
+  --pass: #0e6b4d;
+  --warn: #8a5600;
+  --fail: #a51919;
   --preview-bg: #c3cad9;
 }
 
@@ -36,9 +37,9 @@
   --text: #e6e9ee;
   --muted: #a3adba;
   --accent: #7fd1b9;
-  --pass: #57c79a;
-  --warn: #d9a441;
-  --fail: #e2726e;
+  --pass: #6fd6ab;
+  --warn: #e5b45c;
+  --fail: #ff8f8a;
   --preview-bg: #6f7580;
 }
 
@@ -282,8 +283,8 @@ button.primary {
 
 .error {
   border: 1px solid var(--fail);
-  background: rgba(239, 107, 107, 0.12);
-  color: #ffd8d8;
+  background: color-mix(in srgb, var(--fail) 12%, var(--panel));
+  color: var(--fail);
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 13px;
@@ -329,21 +330,26 @@ button.primary {
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--panel-2);
+  color: var(--text);
 }
 
+/* Tint from the status colour so contrast holds in both light and dark themes. */
 .chip.critical {
   border-color: var(--fail);
-  color: #ffc9c9;
+  color: var(--fail);
+  background: color-mix(in srgb, var(--fail) 12%, var(--panel));
 }
 
 .chip.important {
   border-color: var(--warn);
-  color: #ffe2b3;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, var(--panel));
 }
 
 .chip.matched {
   border-color: var(--pass);
-  color: #c6f4e0;
+  color: var(--pass);
+  background: color-mix(in srgb, var(--pass) 12%, var(--panel));
 }
 
 .chip.selectable {
@@ -361,7 +367,7 @@ button.primary {
 
 .chip.selectable.selected {
   border-color: var(--accent);
-  background: rgba(110, 168, 254, 0.16);
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
   color: var(--text);
 }
 
@@ -563,12 +569,12 @@ button.primary {
 }
 
 .editable:focus {
-  outline: 2px solid #6ea8fe;
+  outline: 2px solid var(--accent);
   border-radius: 3px;
 }
 
 .editable:hover {
-  background: rgba(110, 168, 254, 0.12);
+  background: color-mix(in srgb, var(--accent) 14%, #fff);
   border-radius: 3px;
   cursor: text;
 }
