@@ -1,0 +1,20 @@
+Senior Backend Engineer, Payments Platform
+
+We are hiring a Senior Backend Engineer to build and scale distributed systems that power our global payments platform. You will design microservices, own reliability, and partner with product and data teams.
+
+Responsibilities
+- Design and build distributed systems and REST APIs in Go or Java
+- Own service reliability, observability, and incident response using Datadog and Prometheus
+- Build data pipelines with Kafka and Spark to support real-time fraud detection
+- Deploy and operate services on Kubernetes with Terraform-managed infrastructure as code
+- Drive system design reviews and mentor engineers across teams
+- Partner cross functionally with product managers and designers
+
+Qualifications
+- 6+ years of professional software engineering experience
+- Strong experience with Kubernetes, Docker, Terraform, and AWS
+- Expertise in Go, Java, or Python and a solid grasp of data structures and system design
+- Experience with PostgreSQL, Redis, and event driven architectures
+- Experience with continuous integration and continuous delivery pipelines
+- Bachelor's degree in Computer Science or equivalent experience
+- Excellent communication and stakeholder management skills
