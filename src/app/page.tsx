@@ -178,16 +178,16 @@ export default function Home() {
 
   return (
     <main className="shell">
-      <header className="masthead masthead-row">
-        <div>
+      <header className="masthead">
+        <div className="masthead-row">
           <h1>Resume-to-JD Optimizer</h1>
-          <p>
-            Upload a resume and a job description to get a keyword/qualification gap report, an ATS compliance
-            audit, a rewritten FAANG-style resume, and ATS-safe PDF/DOCX exports.
-          </p>
+          <ThemeSwitcher />
         </div>
-        <ThemeSwitcher />
       </header>
+      <p className="masthead-sub">
+        Upload a resume and a job description to get a keyword/qualification gap report, an ATS compliance audit,
+        a rewritten FAANG-style resume, and ATS-safe PDF/DOCX exports.
+      </p>
 
       <div className="layout">
         <div>

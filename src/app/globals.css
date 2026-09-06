@@ -78,19 +78,36 @@ a {
 .shell {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 28px 24px 64px;
+  padding: 0 24px 64px;
+}
+
+/* Slim bar stays pinned; the strapline below it is free to scroll away. */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0 12px;
 }
 
 .masthead h1 {
-  margin: 0 0 6px;
-  font-size: 26px;
+  margin: 0;
+  font-size: 22px;
   letter-spacing: -0.02em;
+}
+
+.masthead-sub {
+  margin: 14px 0 0;
+  color: var(--muted);
+  max-width: 780px;
+  line-height: 1.5;
 }
 
 .masthead-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
@@ -143,8 +160,9 @@ a {
 @media (min-width: 901px) {
   .rail {
     position: sticky;
-    top: 16px;
-    max-height: calc(100vh - 32px);
+    /* Clears the pinned header bar. */
+    top: 74px;
+    max-height: calc(100vh - 90px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 4px;
