@@ -3,9 +3,17 @@
 import { useMemo, useState } from "react";
 import { METRICS_WIZARD } from "@/constants/copy";
 import { hasMetric } from "@/lib/keywords";
+import { hasUnfilledPlaceholder, suggestMetrics } from "@/lib/metricSuggestions";
 import type { StructuredResume } from "@/lib/types";
 
-type Target = { roleIndex: number; bulletIndex: number; role: string; text: string };
+type Target = {
+  key: string;
+  roleIndex: number;
+  bulletIndex: number;
+  role: string;
+  text: string;
+  suggestions: string[];
+};
 
 type Props = {
   resume: StructuredResume;
@@ -19,9 +27,8 @@ const PAGE_SIZE = 6;
 function withImpact(bullet: string, impact: string): string {
   const stem = bullet.replace(/[.;,\s]+$/, "");
   const clause = impact.trim().replace(/^[,;\s]+/, "").replace(/[.;]+$/, "");
-  const connector = /^(improv|reduc|cutt|increas|boost|sav|deliver|driv|grow|scal)\w*ing\b/i.test(clause)
-    ? ", "
-    : ", resulting in ";
+  const opener = clause.split(/\s+/)[0] ?? "";
+  const connector = /ing$/i.test(opener) ? ", " : /ed$/i.test(opener) ? ", now " : ", resulting in ";
   return `${stem}${connector}${clause.charAt(0).toLowerCase()}${clause.slice(1)}`;
 }
 
@@ -34,7 +41,14 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
     () =>
       resume.experience.flatMap((exp, roleIndex) =>
         exp.bullets
-          .map((text, bulletIndex) => ({ roleIndex, bulletIndex, role: exp.role || exp.company, text }))
+          .map((text, bulletIndex) => ({
+            key: `${roleIndex}:${bulletIndex}`,
+            roleIndex,
+            bulletIndex,
+            role: exp.role || exp.company,
+            text,
+            suggestions: suggestMetrics(text),
+          }))
           .filter((t) => !hasMetric(t.text))
       ),
     [resume]
@@ -42,12 +56,20 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
 
   if (targets.length === 0) return null;
 
-  const filled = Object.entries(drafts).filter(([, value]) => value.trim().length > 0);
-  const withNumbers = filled.filter(([, value]) => /\d/.test(value));
+  const start = () => {
+    // Pre-fill every row with phrasing that matches that bullet, so the user only
+    // types the figures.
+    setDrafts(Object.fromEntries(targets.map((t) => [t.key, t.suggestions[0]])));
+    setOpen(true);
+  };
+
+  const ready = Object.entries(drafts).filter(
+    ([, value]) => value.trim().length > 0 && /\d/.test(value) && !hasUnfilledPlaceholder(value)
+  );
 
   const apply = () => {
     const next: StructuredResume = JSON.parse(JSON.stringify(resume));
-    for (const [key, value] of withNumbers) {
+    for (const [key, value] of ready) {
       const [roleIndex, bulletIndex] = key.split(":").map(Number);
       const bullet = next.experience[roleIndex]?.bullets[bulletIndex];
       if (bullet) next.experience[roleIndex].bullets[bulletIndex] = withImpact(bullet, value);
@@ -58,6 +80,8 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
     onApply(next);
   };
 
+  const pending = targets.length - ready.length;
+
   return (
     <div className="card">
       <h2>{METRICS_WIZARD.title(targets.length)}</h2>
@@ -65,7 +89,7 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
 
       {!open ? (
         <div className="row">
-          <button type="button" className="primary" disabled={busy} onClick={() => setOpen(true)}>
+          <button type="button" className="primary" disabled={busy} onClick={start}>
             {METRICS_WIZARD.cta}
           </button>
           <span className="hint" style={{ margin: 0 }}>
@@ -74,12 +98,14 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
         </div>
       ) : (
         <>
+          <p className="hint">{METRICS_WIZARD.suggestionHint}</p>
+
           {targets.slice(0, visible).map((target) => {
-            const key = `${target.roleIndex}:${target.bulletIndex}`;
-            const value = drafts[key] ?? "";
-            const invalid = value.trim().length > 0 && !/\d/.test(value);
+            const value = drafts[target.key] ?? "";
+            const blank = hasUnfilledPlaceholder(value);
+            const missingNumber = value.trim().length > 0 && !blank && !/\d/.test(value);
             return (
-              <div key={key} className="metric-row">
+              <div key={target.key} className="metric-row">
                 <div className="metric-bullet">
                   <span className="badge">{target.role}</span> {target.text}
                 </div>
@@ -87,10 +113,27 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
                   type="text"
                   value={value}
                   placeholder={METRICS_WIZARD.placeholder}
-                  onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [target.key]: e.target.value }))}
                 />
-                {invalid && <div className="metric-warning">{METRICS_WIZARD.needsNumber}</div>}
-                {value.trim() && !invalid && <div className="metric-preview">{withImpact(target.text, value)}</div>}
+                {target.suggestions.length > 1 && (
+                  <div className="chips" style={{ marginTop: 6 }}>
+                    {target.suggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="chip"
+                        onClick={() => setDrafts((d) => ({ ...d, [target.key]: suggestion }))}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {blank && <div className="metric-warning">{METRICS_WIZARD.fillBlanks}</div>}
+                {missingNumber && <div className="metric-warning">{METRICS_WIZARD.needsNumber}</div>}
+                {!blank && !missingNumber && value.trim() && (
+                  <div className="metric-preview">{withImpact(target.text, value)}</div>
+                )}
               </div>
             );
           })}
@@ -102,8 +145,8 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
           )}
 
           <div className="row" style={{ marginTop: 12 }}>
-            <button type="button" className="primary" disabled={busy || withNumbers.length === 0} onClick={apply}>
-              {METRICS_WIZARD.apply(withNumbers.length)}
+            <button type="button" className="primary" disabled={busy || ready.length === 0} onClick={apply}>
+              {METRICS_WIZARD.apply(ready.length)}
             </button>
             <button
               type="button"
@@ -115,6 +158,11 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
             >
               {METRICS_WIZARD.cancel}
             </button>
+            {pending > 0 && (
+              <span className="hint" style={{ margin: 0 }}>
+                {METRICS_WIZARD.pending(pending)}
+              </span>
+            )}
           </div>
         </>
       )}

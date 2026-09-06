@@ -588,6 +588,11 @@ button.primary {
   padding: 10px 0;
 }
 
+.metric-row .chip {
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .metric-bullet {
   font-size: 13px;
   line-height: 1.45;
