@@ -250,7 +250,7 @@ export default function Home() {
           )}
         </div>
 
-        <div>
+        <div className="rail">
           <div className="card">
             <h2>4 · Template library</h2>
             <p className="hint">
@@ -291,7 +291,7 @@ export default function Home() {
                 >
                   Optimized
                 </button>
-                <div style={{ flex: 1 }} />
+                <div className="spacer" />
                 <button type="button" onClick={() => handleExport("pdf")} disabled={busy !== null || !previewResume}>
                   Export PDF
                 </button>
@@ -320,7 +320,7 @@ export default function Home() {
                   </p>
                 )}
                 <div className="preview-wrap">
-                  <div style={{ height: `calc(11in * ${zoom})` }}>
+                  <div style={{ height: `calc(11in * ${zoom})`, width: `calc(8.5in * ${zoom})` }}>
                     <ResumePreview
                       resume={previewResume}
                       spec={spec}
