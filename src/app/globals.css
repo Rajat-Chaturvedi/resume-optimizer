@@ -166,12 +166,25 @@ a {
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 4px;
+    /* Scrolls, but only the page shows a scrollbar. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  /* One scroll region only: the preview grows inside the rail instead of nesting. */
   .rail .preview-wrap {
     max-height: none;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .rail .preview-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--panel);
+    margin: -18px -18px 12px;
+    padding: 18px 18px 12px;
+    border-bottom: 1px solid var(--border);
   }
 }
 
@@ -488,16 +501,9 @@ button.primary {
 }
 
 .rail::-webkit-scrollbar {
-  width: 10px;
-}
-
-.rail::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
-}
-
-.rail::-webkit-scrollbar-track {
-  background: transparent;
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .page {
