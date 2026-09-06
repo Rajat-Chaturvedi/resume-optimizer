@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { UPLOAD } from "@/constants/config";
 import { assertUploadSafe, extractDocument } from "@/lib/extract";
 import { buildGapReport } from "@/lib/gapAnalysis";
 import { parseResume } from "@/lib/resumeParser";
@@ -28,14 +29,14 @@ export async function POST(request: Request) {
       jdText = (await extractDocument(jdBuffer, jdExt)).text;
     }
 
-    if (jdText.trim().length < 80) {
+    if (jdText.trim().length < UPLOAD.minJdCharacters) {
       return NextResponse.json(
-        { error: "Provide a job description of at least 80 characters." },
+        { error: `Provide a job description of at least ${UPLOAD.minJdCharacters} characters.` },
         { status: 400 }
       );
     }
 
-    if (extracted.text.trim().length < 120) {
+    if (extracted.text.trim().length < UPLOAD.minResumeCharacters) {
       return NextResponse.json(
         {
           error:

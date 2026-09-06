@@ -1,3 +1,4 @@
+import { LLM } from "@/constants/config";
 import { ACTION_VERBS, findInText, hasMetric, normalise } from "./keywords";
 import { llmEnabled, llmJson } from "./llm";
 import { stripBulletGlyph } from "./resumeParser";
@@ -445,7 +446,7 @@ export async function optimiseResume(
         }\n\nWEAK SECTIONS: ${report.weakSections.map((s) => `${s.section}: ${s.issue}`).join(" | ")}`,
       },
     ],
-    4000
+    LLM.rewriteMaxTokens
   );
 
   if (!llm?.resume) return heuristic;

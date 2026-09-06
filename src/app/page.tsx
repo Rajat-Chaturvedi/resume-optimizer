@@ -6,6 +6,8 @@ import OptimizationSummary from "@/components/OptimizationSummary";
 import ResumePreview from "@/components/ResumePreview";
 import TemplateGallery from "@/components/TemplateGallery";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import { PREVIEW, UPLOAD } from "@/constants/config";
+import { APP, INPUT_PANEL, PREVIEW_PANEL, REPORT_PANEL, TEMPLATE_PANEL, VALIDATION } from "@/constants/copy";
 import { getTemplate, type TemplateId } from "@/lib/templates";
 import type { GapReport, OptimizeResult, StructuredResume } from "@/lib/types";
 
@@ -28,7 +30,7 @@ export default function Home() {
   const [editedResume, setEditedResume] = useState<StructuredResume | null>(null);
   const [templateId, setTemplateId] = useState<TemplateId>("faang-standard");
   const [view, setView] = useState<"optimized" | "original">("optimized");
-  const [zoom, setZoom] = useState(0.8);
+  const [zoom, setZoom] = useState<number>(PREVIEW.defaultZoom);
   const [liveReport, setLiveReport] = useState<GapReport | null>(null);
   const [rescoring, setRescoring] = useState(false);
 
@@ -60,7 +62,7 @@ export default function Home() {
       } finally {
         setRescoring(false);
       }
-    }, 700);
+    }, PREVIEW.rescoreDelayMs);
 
     return () => {
       clearTimeout(timer);
@@ -71,16 +73,16 @@ export default function Home() {
   async function runAnalysis(): Promise<AnalyzeResponse | null> {
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setError("Select a resume file first.");
+      setError(VALIDATION.missingResume);
       return null;
     }
-    if (jdText.trim().length < 80) {
-      setError("Paste a job description (at least 80 characters).");
+    if (jdText.trim().length < UPLOAD.minJdCharacters) {
+      setError(VALIDATION.shortJd);
       return null;
     }
 
     setBusy("analyze");
-    setStage("Parsing your resume and scoring it against the job description…");
+    setStage(INPUT_PANEL.stageAnalyzing);
     setError(null);
     setOptimized(null);
     setEditedResume(null);
@@ -91,12 +93,12 @@ export default function Home() {
       form.append("jdText", jdText);
       const res = await fetch("/api/analyze", { method: "POST", body: form });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Analysis failed.");
+      if (!res.ok) throw new Error(data.error ?? VALIDATION.analysisFailed);
       setAnalysis(data as AnalyzeResponse);
       setView("original");
       return data as AnalyzeResponse;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed.");
+      setError(err instanceof Error ? err.message : VALIDATION.analysisFailed);
       return null;
     } finally {
       setBusy(null);
@@ -106,11 +108,7 @@ export default function Home() {
   async function runOptimization(source: AnalyzeResponse | null = analysis, confirmedSkills: string[] = []) {
     if (!source) return;
     setBusy("optimize");
-    setStage(
-      confirmedSkills.length
-        ? "Adding your confirmed skills and re-optimizing…"
-        : "Rewriting bullets, aligning keywords and re-checking ATS compliance…"
-    );
+    setStage(confirmedSkills.length ? INPUT_PANEL.stageConfirming : INPUT_PANEL.stageOptimizing);
     setError(null);
     try {
       const res = await fetch("/api/optimize", {
@@ -124,12 +122,12 @@ export default function Home() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Optimization failed.");
+      if (!res.ok) throw new Error(data.error ?? VALIDATION.optimizationFailed);
       setOptimized(data);
       setEditedResume(data.resume);
       setView("optimized");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Optimization failed.");
+      setError(err instanceof Error ? err.message : VALIDATION.optimizationFailed);
     } finally {
       setBusy(null);
       setStage(null);
@@ -160,7 +158,7 @@ export default function Home() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Export failed.");
+        throw new Error(data.error ?? VALIDATION.exportFailed);
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -170,7 +168,7 @@ export default function Home() {
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Export failed.");
+      setError(err instanceof Error ? err.message : VALIDATION.exportFailed);
     } finally {
       setBusy(null);
     }
@@ -180,57 +178,51 @@ export default function Home() {
     <main className="shell">
       <header className="masthead">
         <div className="masthead-row">
-          <h1>Resume-to-JD Optimizer</h1>
+          <h1>{APP.name}</h1>
           <ThemeSwitcher />
         </div>
       </header>
-      <p className="masthead-sub">
-        Upload a resume and a job description to get a keyword/qualification gap report, an ATS compliance audit,
-        a rewritten FAANG-style resume, and ATS-safe PDF/DOCX exports.
-      </p>
+      <p className="masthead-sub">{APP.description}</p>
 
       <div className="layout">
         <div>
           <form className="card" onSubmit={handleRun}>
-            <h2>1 · Input</h2>
-            <p className="hint">PDF, DOCX, or TXT resume up to 8 MB. Scanned images cannot be parsed by an ATS.</p>
+            <h2>{INPUT_PANEL.title}</h2>
+            <p className="hint">{INPUT_PANEL.hint}</p>
             <label className="field" htmlFor="resume">
-              Resume / CV
+              {INPUT_PANEL.resumeLabel}
             </label>
-            <input id="resume" ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" />
+            <input id="resume" ref={fileRef} type="file" accept={UPLOAD.accept} />
             <label className="field" htmlFor="jd" style={{ marginTop: 14 }}>
-              Job description
+              {INPUT_PANEL.jdLabel}
             </label>
             <textarea
               id="jd"
               value={jdText}
               onChange={(e) => setJdText(e.target.value)}
-              placeholder="Paste the full job description, including requirements and qualifications…"
+              placeholder={INPUT_PANEL.jdPlaceholder}
             />
             <div className="row" style={{ marginTop: 12 }}>
               <button className="primary" type="submit" disabled={busy !== null}>
                 {busy === "analyze" || busy === "optimize" ? <span className="spinner" /> : null}
-                {analysis ? "Run again" : "Analyze & optimize"}
+                {analysis ? INPUT_PANEL.runAgain : INPUT_PANEL.run}
               </button>
               <button type="button" onClick={handleReportOnly} disabled={busy !== null}>
-                Gap report only
+                {INPUT_PANEL.reportOnly}
               </button>
               {analysis && !optimized && (
                 <button type="button" onClick={() => runOptimization()} disabled={busy !== null}>
-                  Optimize now
+                  {INPUT_PANEL.optimizeNow}
                 </button>
               )}
             </div>
             <p className="hint" style={{ margin: "10px 0 0" }}>
-              {stage ??
-                "One run produces the gap report, the rewritten resume, and the before/after comparison below."}
+              {stage ?? INPUT_PANEL.idle}
             </p>
             {error && <div className="error">{error}</div>}
           </form>
 
-          {analysis && (
-            <GapReportPanel report={analysis.report} title="2 · Gap report (original resume)" />
-          )}
+          {analysis && <GapReportPanel report={analysis.report} title={REPORT_PANEL.originalTitle} />}
 
           {optimized && (
             <>
@@ -244,7 +236,7 @@ export default function Home() {
               />
               <GapReportPanel
                 report={liveReport ?? optimized.verification}
-                title={liveReport ? "3 · Report after your edits" : "3 · Report after optimization"}
+                title={liveReport ? REPORT_PANEL.editedTitle : REPORT_PANEL.optimizedTitle}
               />
             </>
           )}
@@ -252,25 +244,28 @@ export default function Home() {
 
         <div className="rail">
           <div className="card">
-            <h2>4 · Template library</h2>
-            <p className="hint">
-              Every template is single-column, table-free, and uses ATS-safe fonts. Selecting one instantly
-              re-renders the preview and export.
-            </p>
+            <h2>{TEMPLATE_PANEL.title}</h2>
+            <p className="hint">{TEMPLATE_PANEL.hint}</p>
             <TemplateGallery selected={templateId} onSelect={setTemplateId} />
           </div>
 
           <div className="card">
             <div className="preview-toolbar">
               <div className="row" style={{ justifyContent: "space-between" }}>
-                <h2 style={{ margin: 0 }}>5 · Preview &amp; export</h2>
+                <h2 style={{ margin: 0 }}>{PREVIEW_PANEL.title}</h2>
                 <div className="row">
-                  <button type="button" onClick={() => setZoom((z) => Math.max(0.45, +(z - 0.1).toFixed(2)))}>
-                    −
+                  <button
+                    type="button"
+                    onClick={() => setZoom((z) => Math.max(PREVIEW.minZoom, +(z - PREVIEW.zoomStep).toFixed(2)))}
+                  >
+                    {PREVIEW_PANEL.zoomOut}
                   </button>
                   <span className="badge">{Math.round(zoom * 100)}%</span>
-                  <button type="button" onClick={() => setZoom((z) => Math.min(1.2, +(z + 0.1).toFixed(2)))}>
-                    +
+                  <button
+                    type="button"
+                    onClick={() => setZoom((z) => Math.min(PREVIEW.maxZoom, +(z + PREVIEW.zoomStep).toFixed(2)))}
+                  >
+                    {PREVIEW_PANEL.zoomIn}
                   </button>
                 </div>
               </div>
@@ -282,7 +277,7 @@ export default function Home() {
                   className={view === "original" ? "active" : ""}
                   onClick={() => setView("original")}
                 >
-                  Original
+                  {PREVIEW_PANEL.tabOriginal}
                 </button>
                 <button
                   type="button"
@@ -290,11 +285,11 @@ export default function Home() {
                   onClick={() => setView("optimized")}
                   disabled={!optimized}
                 >
-                  Optimized
+                  {PREVIEW_PANEL.tabOptimized}
                 </button>
                 <div className="spacer" />
                 <button type="button" onClick={() => handleExport("pdf")} disabled={busy !== null || !previewResume}>
-                  Export PDF
+                  {PREVIEW_PANEL.exportPdf}
                 </button>
                 <button
                   type="button"
@@ -302,7 +297,7 @@ export default function Home() {
                   onClick={() => handleExport("docx")}
                   disabled={busy !== null || !previewResume}
                 >
-                  Export DOCX
+                  {PREVIEW_PANEL.exportDocx}
                 </button>
               </div>
             )}
@@ -312,11 +307,10 @@ export default function Home() {
               <>
                 {view === "optimized" && optimized && (
                   <p className="hint" style={{ margin: "0 0 10px" }}>
-                    Click any line to edit it — name, title, contact, skills, dates, bullets, projects, education.
-                    Metrics above refresh automatically.{" "}
+                    {PREVIEW_PANEL.editHint}{" "}
                     {rescoring && (
                       <span className="live-badge">
-                        <span className="spinner" /> re-scoring
+                        <span className="spinner" /> {PREVIEW_PANEL.rescoring}
                       </span>
                     )}
                   </p>
@@ -332,8 +326,7 @@ export default function Home() {
               </>
             ) : (
               <p className="hint" style={{ margin: 0 }}>
-                Run an analysis to see the live preview. Once optimized, click any bullet in the preview to edit it
-                inline before exporting.
+                {PREVIEW_PANEL.empty}
               </p>
             )}
           </div>

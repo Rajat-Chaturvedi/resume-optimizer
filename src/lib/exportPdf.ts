@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { SECTION_LABELS } from "@/constants/copy";
 import type { TemplateSpec } from "./templates";
 import type { StructuredResume } from "./types";
 
@@ -137,19 +138,19 @@ export async function buildPdf(resume: StructuredResume, spec: TemplateSpec): Pr
   if (contactLine) drawText(contactLine, { align: centerHeader ? "center" : "left", after: 4 });
 
   if (resume.summary) {
-    drawHeading("Summary");
+    drawHeading(SECTION_LABELS.summary);
     drawText(resume.summary);
   }
 
   if (resume.skills.length) {
-    drawHeading("Skills");
+    drawHeading(SECTION_LABELS.skills);
     for (const group of resume.skills) {
       drawText(`${group.category}: ${group.skills.join(", ")}`);
     }
   }
 
   if (resume.experience.length) {
-    drawHeading("Experience");
+    drawHeading(SECTION_LABELS.experience);
     for (const exp of resume.experience) {
       const dates = [exp.startDate, exp.endDate].filter(Boolean).join(" - ");
       drawRightAligned(exp.role, dates, fonts.bold);
@@ -165,7 +166,7 @@ export async function buildPdf(resume: StructuredResume, spec: TemplateSpec): Pr
   }
 
   if (resume.projects.length) {
-    drawHeading("Projects");
+    drawHeading(SECTION_LABELS.projects);
     for (const project of resume.projects) {
       drawText(project.description ? `${project.name} - ${project.description}` : project.name, {
         font: fonts.bold,
@@ -180,7 +181,7 @@ export async function buildPdf(resume: StructuredResume, spec: TemplateSpec): Pr
   }
 
   if (resume.education.length) {
-    drawHeading("Education");
+    drawHeading(SECTION_LABELS.education);
     for (const edu of resume.education) {
       drawRightAligned(edu.institution || edu.degree, edu.graduation ?? "", fonts.bold);
       if (edu.institution && edu.degree) drawText(edu.degree, { font: fonts.italic });
@@ -190,7 +191,7 @@ export async function buildPdf(resume: StructuredResume, spec: TemplateSpec): Pr
   }
 
   if (resume.certifications.length) {
-    drawHeading("Certifications");
+    drawHeading(SECTION_LABELS.certifications);
     for (const cert of resume.certifications) {
       ensureSpace(leading);
       page.drawText("-", { x: margin + 4, y: y - size, size, font: fonts.regular, color });

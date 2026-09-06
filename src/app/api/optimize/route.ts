@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { OPTIMIZER } from "@/constants/config";
 import { verifyResume } from "@/lib/gapAnalysis";
 import { optimiseResume } from "@/lib/optimizer";
 import type { GapReport, StructuredResume } from "@/lib/types";
@@ -20,7 +21,12 @@ export async function POST(request: Request) {
     }
 
     const confirmed = Array.isArray(confirmedSkills)
-      ? confirmedSkills.filter((s) => typeof s === "string" && s.trim().length > 0 && s.length <= 60).slice(0, 25)
+      ? confirmedSkills
+          .filter(
+            (s) =>
+              typeof s === "string" && s.trim().length > 0 && s.length <= OPTIMIZER.maxConfirmedSkillLength
+          )
+          .slice(0, OPTIMIZER.maxConfirmedSkills)
       : [];
 
     const result = await optimiseResume(resume, report, jdText, confirmed);

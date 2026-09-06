@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { SECTION_LABELS } from "@/constants/copy";
 import type { TemplateSpec } from "@/lib/templates";
 import type { StructuredResume } from "@/lib/types";
 
@@ -98,14 +99,14 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
 
       {resume.summary && (
         <section>
-          <Heading label="Summary" />
+          <Heading label={SECTION_LABELS.summary} />
           <p {...field((text) => commit((d) => (d.summary = text)))}>{resume.summary}</p>
         </section>
       )}
 
       {resume.skills.length > 0 && (
         <section>
-          <Heading label="Skills" />
+          <Heading label={SECTION_LABELS.skills} />
           {resume.skills.map((group, gi) => (
             <p key={`${group.category}-${gi}`}>
               <strong {...field((text) => commit((d) => (d.skills[gi].category = text.replace(/:$/, ""))))}>
@@ -128,7 +129,7 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
 
       {resume.experience.length > 0 && (
         <section>
-          <Heading label="Experience" />
+          <Heading label={SECTION_LABELS.experience} />
           {resume.experience.map((exp, ei) => (
             <div key={`${exp.company}-${ei}`} style={{ marginBottom: "0.5em" }}>
               <div className="role-line">
@@ -181,7 +182,7 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
 
       {resume.projects.length > 0 && (
         <section>
-          <Heading label="Projects" />
+          <Heading label={SECTION_LABELS.projects} />
           {resume.projects.map((project, pi) => (
             <div key={`${project.name}-${pi}`} style={{ marginBottom: "0.4em" }}>
               <strong {...field((text) => commit((d) => (d.projects[pi].name = text)))}>{project.name}</strong>
@@ -215,7 +216,7 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
 
       {resume.education.length > 0 && (
         <section>
-          <Heading label="Education" />
+          <Heading label={SECTION_LABELS.education} />
           {resume.education.map((edu, ei) => (
             <div key={`${edu.institution}-${ei}`} style={{ marginBottom: "0.35em" }}>
               <div className="role-line">
@@ -258,7 +259,7 @@ export default function ResumePreview({ resume, spec, onEdit, zoom }: Props) {
 
       {resume.certifications.length > 0 && (
         <section>
-          <Heading label="Certifications" />
+          <Heading label={SECTION_LABELS.certifications} />
           <ul>
             {resume.certifications.map((cert, ci) => (
               <li

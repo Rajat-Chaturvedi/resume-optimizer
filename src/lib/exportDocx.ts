@@ -8,6 +8,7 @@ import {
   TabStopType,
   TextRun,
 } from "docx";
+import { SECTION_LABELS } from "@/constants/copy";
 import type { TemplateSpec } from "./templates";
 import type { StructuredResume } from "./types";
 
@@ -108,7 +109,7 @@ export async function buildDocx(resume: StructuredResume, spec: TemplateSpec): P
   }
 
   if (resume.summary) {
-    children.push(sectionHeading("Summary", spec));
+    children.push(sectionHeading(SECTION_LABELS.summary, spec));
     children.push(
       new Paragraph({
         spacing: { after: 60, line: Math.round(spec.lineHeight * 240) },
@@ -118,7 +119,7 @@ export async function buildDocx(resume: StructuredResume, spec: TemplateSpec): P
   }
 
   if (resume.skills.length) {
-    children.push(sectionHeading("Skills", spec));
+    children.push(sectionHeading(SECTION_LABELS.skills, spec));
     for (const group of resume.skills) {
       children.push(
         new Paragraph({
@@ -130,7 +131,7 @@ export async function buildDocx(resume: StructuredResume, spec: TemplateSpec): P
   }
 
   if (resume.experience.length) {
-    children.push(sectionHeading("Experience", spec));
+    children.push(sectionHeading(SECTION_LABELS.experience, spec));
     for (const exp of resume.experience) {
       const dates = [exp.startDate, exp.endDate].filter(Boolean).join(" – ");
       children.push(twoColumnLine([body(exp.role, spec, { bold: true })], dates, spec));
@@ -145,7 +146,7 @@ export async function buildDocx(resume: StructuredResume, spec: TemplateSpec): P
   }
 
   if (resume.projects.length) {
-    children.push(sectionHeading("Projects", spec));
+    children.push(sectionHeading(SECTION_LABELS.projects, spec));
     for (const project of resume.projects) {
       children.push(
         new Paragraph({
@@ -161,7 +162,7 @@ export async function buildDocx(resume: StructuredResume, spec: TemplateSpec): P
   }
 
   if (resume.education.length) {
-    children.push(sectionHeading("Education", spec));
+    children.push(sectionHeading(SECTION_LABELS.education, spec));
     for (const edu of resume.education) {
       children.push(twoColumnLine([body(edu.institution || edu.degree, spec, { bold: true })], edu.graduation ?? "", spec));
       if (edu.institution && edu.degree) {
@@ -172,7 +173,7 @@ export async function buildDocx(resume: StructuredResume, spec: TemplateSpec): P
   }
 
   if (resume.certifications.length) {
-    children.push(sectionHeading("Certifications", spec));
+    children.push(sectionHeading(SECTION_LABELS.certifications, spec));
     for (const cert of resume.certifications) children.push(bullet(cert, spec));
   }
 

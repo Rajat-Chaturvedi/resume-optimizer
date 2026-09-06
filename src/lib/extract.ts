@@ -1,4 +1,5 @@
 import mammoth from "mammoth";
+import { UPLOAD } from "@/constants/config";
 
 export type ExtractedDocument = {
   text: string;
@@ -15,9 +16,6 @@ export type ExtractedDocument = {
   };
 };
 
-const MAX_BYTES = 8 * 1024 * 1024;
-
-// Font families that ATS parsers (Taleo, Workday, Greenhouse, iCIMS) reliably map to text.
 const ATS_SAFE_FONTS = [
   "arial",
   "helvetica",
@@ -46,9 +44,9 @@ function normaliseFontName(raw: string): string {
 
 export function assertUploadSafe(file: { size: number; name: string; type: string }) {
   if (file.size === 0) throw new Error("Uploaded file is empty.");
-  if (file.size > MAX_BYTES) throw new Error("File exceeds the 8 MB limit.");
+  if (file.size > UPLOAD.maxBytes) throw new Error(`File exceeds the ${UPLOAD.maxBytes / (1024 * 1024)} MB limit.`);
   const ext = file.name.toLowerCase().split(".").pop();
-  if (!ext || !["pdf", "docx", "txt", "md"].includes(ext)) {
+  if (!ext || !UPLOAD.allowedExtensions.includes(ext as (typeof UPLOAD.allowedExtensions)[number])) {
     throw new Error("Unsupported file type. Upload a PDF, DOCX, or TXT resume.");
   }
   return ext as "pdf" | "docx" | "txt" | "md";

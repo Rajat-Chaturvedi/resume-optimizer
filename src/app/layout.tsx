@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
+import { APP } from "@/constants/copy";
+import { DEFAULT_THEME, THEME_STORAGE_KEY, themeCss } from "@/constants/themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Resume-to-JD Optimizer",
-  description:
-    "Upload a resume and a job description to get an ATS gap report, a rewritten FAANG-style resume, and PDF/DOCX exports.",
+  title: APP.name,
+  description: APP.description,
 };
+
+const restoreTheme = `try{var t=localStorage.getItem(${JSON.stringify(
+  THEME_STORAGE_KEY
+)});if(t)document.documentElement.dataset.theme=t;}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" data-theme={DEFAULT_THEME}>
       <head>
+        <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
         {/* Applied before paint so the stored theme does not flash the default one. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("resume-optimizer-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}`,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: restoreTheme }} />
       </head>
       <body>{children}</body>
     </html>

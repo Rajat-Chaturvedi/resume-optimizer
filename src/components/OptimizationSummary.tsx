@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { OPTIMIZER_PANEL } from "@/constants/copy";
 import type { GapReport, OptimizeResult } from "@/lib/types";
 
 function atsScore(report: GapReport): number {
@@ -12,7 +13,7 @@ function atsScore(report: GapReport): number {
 }
 
 function Delta({ diff, improved }: { diff: number; improved: boolean }) {
-  if (diff === 0) return <span className="delta flat">no change</span>;
+  if (diff === 0) return <span className="delta flat">{OPTIMIZER_PANEL.noChange}</span>;
   return (
     <span className={`delta ${improved ? "up" : "down"}`}>
       {diff > 0 ? `+${diff}` : diff}
@@ -37,17 +38,17 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
     );
 
   const rows = [
-    { label: "Match score", before: before.matchScore, after: after.matchScore },
-    { label: "Keyword coverage", before: before.keywordCoverage, after: after.keywordCoverage, unit: "%" },
-    { label: "ATS structure", before: atsScore(before), after: atsScore(after) },
+    { label: OPTIMIZER_PANEL.rowMatch, before: before.matchScore, after: after.matchScore },
+    { label: OPTIMIZER_PANEL.rowCoverage, before: before.keywordCoverage, after: after.keywordCoverage, unit: "%" },
+    { label: OPTIMIZER_PANEL.rowAts, before: atsScore(before), after: atsScore(after) },
     {
-      label: "Bullets without metrics",
+      label: OPTIMIZER_PANEL.rowNoMetrics,
       before: countBulletIssue(before, "quantified"),
       after: countBulletIssue(after, "quantified"),
       lowerIsBetter: true,
     },
     {
-      label: "Passive / weak openers",
+      label: OPTIMIZER_PANEL.rowPassive,
       before: countBulletIssue(before, "passive"),
       after: countBulletIssue(after, "passive"),
       lowerIsBetter: true,
@@ -72,17 +73,17 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
   return (
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>What the optimizer changed</h2>
-        <span className="badge">{result.usedLlm ? "LLM rewrite" : "rules engine (no LLM key)"}</span>
+        <h2>{OPTIMIZER_PANEL.title}</h2>
+        <span className="badge">{result.usedLlm ? OPTIMIZER_PANEL.llmBadge : OPTIMIZER_PANEL.rulesBadge}</span>
       </div>
 
       <table className="compare">
         <thead>
           <tr>
-            <th>Metric</th>
-            <th>Before</th>
-            <th>After</th>
-            <th>Δ</th>
+            <th>{OPTIMIZER_PANEL.metric}</th>
+            <th>{OPTIMIZER_PANEL.before}</th>
+            <th>{OPTIMIZER_PANEL.after}</th>
+            <th>{OPTIMIZER_PANEL.delta}</th>
           </tr>
         </thead>
         <tbody>
@@ -110,7 +111,7 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {result.changeLog.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>Edits applied</h3>
+          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.editsTitle}</h3>
           <ul className="changelog">
             {result.changeLog.map((entry, i) => (
               <li key={i}>{entry}</li>
@@ -121,7 +122,7 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {newlyMatched.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>Keywords now matching the JD</h3>
+          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.newlyMatchedTitle}</h3>
           <div className="chips">
             {newlyMatched.map((k) => (
               <span key={k} className="chip matched">
@@ -134,7 +135,7 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {fixedChecks.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>ATS checks fixed</h3>
+          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.checksFixedTitle}</h3>
           <ul className="changelog">
             {fixedChecks.map((c) => (
               <li key={c.id}>{c.label}</li>
@@ -145,10 +146,9 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {result.closedSemanticGaps.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>Wording gaps closed automatically</h3>
+          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.closedTitle}</h3>
           <p className="hint" style={{ marginBottom: 8 }}>
-            Your bullets already evidenced these capabilities; the resume now uses the job description&apos;s
-            terminology for them.
+            {OPTIMIZER_PANEL.closedHint}
           </p>
           <ul className="changelog">
             {result.closedSemanticGaps.map((c) => (
@@ -162,7 +162,7 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {result.confirmedSkills.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>Skills you confirmed</h3>
+          <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>{OPTIMIZER_PANEL.confirmedTitle}</h3>
           <div className="chips">
             {result.confirmedSkills.map((s) => (
               <span key={s} className="chip matched">
@@ -175,13 +175,9 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {specializedGaps.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "16px 0 6px" }}>
-            Have experience with any of these skills? Add them to your resume
-          </h3>
+          <h3 style={{ fontSize: 14, margin: "16px 0 6px" }}>{OPTIMIZER_PANEL.confirmCtaTitle}</h3>
           <p className="hint" style={{ marginBottom: 8 }}>
-            These are specialized technologies the job description asks for that appear nowhere in your resume.
-            The optimizer will never claim them on your behalf. Tick the ones you genuinely have exposure to and
-            re-run — they will be added to your Skills section and worked into the rewrite.
+            {OPTIMIZER_PANEL.confirmCtaHint}
           </p>
           <div className="chips">
             {specializedGaps.map((k) => (
@@ -203,11 +199,11 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
               onClick={() => onConfirmSkills(selected)}
             >
               {busy && <span className="spinner" />}
-              I have experience with these — optimize my resume
+              {OPTIMIZER_PANEL.confirmCta}
             </button>
             {selected.length > 0 && (
               <button type="button" onClick={() => setSelected([])} disabled={busy}>
-                Clear selection
+                {OPTIMIZER_PANEL.clearSelection}
               </button>
             )}
           </div>
@@ -216,9 +212,8 @@ export default function OptimizationSummary({ before, result, busy, onConfirmSki
 
       {!result.usedLlm && (
         <p className="hint" style={{ marginTop: 14, marginBottom: 0 }}>
-          Running without an LLM key limits rewriting to structural and phrasing fixes. Set{" "}
-          <code>OPENAI_API_KEY</code> in <code>.env.local</code> to enable full JD-targeted rewriting of summary
-          and bullets.
+          {OPTIMIZER_PANEL.noLlmHint} <code>OPENAI_API_KEY</code> in <code>.env.local</code>{" "}
+          {OPTIMIZER_PANEL.noLlmHintTail}
         </p>
       )}
     </div>

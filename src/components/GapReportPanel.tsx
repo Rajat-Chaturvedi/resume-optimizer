@@ -1,5 +1,6 @@
 "use client";
 
+import { REPORT_PANEL } from "@/constants/copy";
 import type { GapReport } from "@/lib/types";
 
 export default function GapReportPanel({ report, title }: { report: GapReport; title: string }) {
@@ -18,30 +19,30 @@ export default function GapReportPanel({ report, title }: { report: GapReport; t
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2>{title}</h2>
-        <span className="badge">{report.usedLlm ? "LLM + rules" : "rules engine"}</span>
+        <span className="badge">{report.usedLlm ? REPORT_PANEL.llmBadge : REPORT_PANEL.rulesBadge}</span>
       </div>
       <p className="hint">{report.summary}</p>
 
       <div className="scores">
         <div className="score">
           <div className="value">{report.matchScore}</div>
-          <div className="label">Match score</div>
+          <div className="label">{REPORT_PANEL.scoreMatch}</div>
         </div>
         <div className="score">
           <div className="value">{report.keywordCoverage}%</div>
-          <div className="label">Keyword coverage</div>
+          <div className="label">{REPORT_PANEL.scoreCoverage}</div>
         </div>
         <div className="score">
           <div className="value">{atsScore}</div>
-          <div className="label">ATS structure</div>
+          <div className="label">{REPORT_PANEL.scoreAts}</div>
         </div>
       </div>
 
       {specialized.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "12px 0 4px" }}>Missing specialized skills</h3>
+          <h3 style={{ fontSize: 14, margin: "12px 0 4px" }}>{REPORT_PANEL.specializedTitle}</h3>
           <p className="hint" style={{ marginBottom: 6 }}>
-            Named technologies or credentials. Only you can confirm these — the optimizer will not claim them.
+            {REPORT_PANEL.specializedHint}
           </p>
           <div className="chips">
             {specialized.map((k) => (
@@ -59,10 +60,9 @@ export default function GapReportPanel({ report, title }: { report: GapReport; t
 
       {semantic.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "14px 0 4px" }}>Wording / terminology gaps</h3>
+          <h3 style={{ fontSize: 14, margin: "14px 0 4px" }}>{REPORT_PANEL.semanticTitle}</h3>
           <p className="hint" style={{ marginBottom: 6 }}>
-            Generic engineering vocabulary. The optimizer adopts this wording wherever your bullets already
-            demonstrate the capability.
+            {REPORT_PANEL.semanticHint}
           </p>
           <div className="chips">
             {semantic.map((k) => (
@@ -81,7 +81,7 @@ export default function GapReportPanel({ report, title }: { report: GapReport; t
       {report.matchedKeywords.length > 0 && (
         <>
           <h3 style={{ fontSize: 14, margin: "14px 0 6px" }}>
-            Matched keywords ({report.matchedKeywords.length})
+            {REPORT_PANEL.matchedTitle(report.matchedKeywords.length)}
           </h3>
           <div className="chips">
             {report.matchedKeywords.slice(0, 24).map((k) => (
@@ -95,26 +95,30 @@ export default function GapReportPanel({ report, title }: { report: GapReport; t
 
       {report.weakSections.length > 0 && (
         <>
-          <h3 style={{ fontSize: 14, margin: "16px 0 8px" }}>Weak sections</h3>
+          <h3 style={{ fontSize: 14, margin: "16px 0 8px" }}>{REPORT_PANEL.weakTitle}</h3>
           {report.weakSections.map((finding, i) => (
             <div key={`${finding.section}-${i}`} className={`finding ${finding.severity}`}>
               <strong>{finding.section}</strong> — {finding.issue}
-              <div className="rec">Fix: {finding.recommendation}</div>
+              <div className="rec">
+                {REPORT_PANEL.fixPrefix} {finding.recommendation}
+              </div>
             </div>
           ))}
         </>
       )}
 
-      <h3 style={{ fontSize: 14, margin: "16px 0 4px" }}>ATS compliance checks</h3>
+      <h3 style={{ fontSize: 14, margin: "16px 0 4px" }}>{REPORT_PANEL.atsTitle}</h3>
       <p className="hint" style={{ marginBottom: 4 }}>
-        Benchmarked against documented parsing behaviour of Workday, Taleo, Greenhouse, Lever and iCIMS.
+        {REPORT_PANEL.atsHint}
       </p>
       {report.atsChecks.map((check) => (
         <div key={check.id} className="check">
           <span className={`status-dot ${check.status}`} />
           <div>
             <strong>{check.label}</strong>
-            <div className="standard">Standard: {check.standard}</div>
+            <div className="standard">
+              {REPORT_PANEL.standardPrefix} {check.standard}
+            </div>
             <div className="detail">{check.detail}</div>
           </div>
         </div>

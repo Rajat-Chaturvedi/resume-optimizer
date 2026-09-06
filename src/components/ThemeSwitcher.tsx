@@ -1,20 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-export const THEMES = [
-  { id: "dark", label: "Dark" },
-  { id: "light", label: "Light" },
-  { id: "slate", label: "Slate" },
-  { id: "contrast", label: "High contrast" },
-] as const;
-
-export type ThemeId = (typeof THEMES)[number]["id"];
-
-export const THEME_STORAGE_KEY = "resume-optimizer-theme";
+import { THEME_SWITCHER_LABEL } from "@/constants/copy";
+import { DEFAULT_THEME, THEMES, THEME_STORAGE_KEY, type ThemeId } from "@/constants/themes";
 
 export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState<ThemeId>("dark");
+  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
 
   useEffect(() => {
     const stored = document.documentElement.dataset.theme as ThemeId | undefined;
@@ -32,7 +23,7 @@ export default function ThemeSwitcher() {
   };
 
   return (
-    <div className="theme-switcher" role="group" aria-label="Colour theme">
+    <div className="theme-switcher" role="group" aria-label={THEME_SWITCHER_LABEL}>
       {THEMES.map((t) => (
         <button
           key={t.id}

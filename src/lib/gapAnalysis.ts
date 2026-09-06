@@ -1,4 +1,5 @@
 import { analyseSections, runAtsChecks, scoreFromChecks } from "./ats";
+import { LLM } from "@/constants/config";
 import type { ExtractedDocument } from "./extract";
 import { extractKeywords, findInText, focusRequirements, normalise, type Keyword } from "./keywords";
 import { llmEnabled, llmJson } from "./llm";
@@ -106,7 +107,7 @@ export async function buildGapReport(
           .map((m) => m.keyword)
           .join(", ")}.`,
       },
-    ], 1600);
+    ], LLM.analysisMaxTokens);
 
     if (llm) {
       usedLlm = true;
