@@ -120,4 +120,17 @@ export const SECTION_LABELS = {
   certifications: "Certifications",
 } as const;
 
+export const METRICS_WIZARD = {
+  title: (count: number) => `Add your numbers (${count} bullet${count === 1 ? "" : "s"})`,
+  hint:
+    "Only you know the real figures, so the optimizer will not guess them. Type the outcome for any bullet and it will be written in for you — or skip this and edit bullets directly in the preview.",
+  cta: "Add my numbers",
+  skipHint: "Prefer to do it yourself? Click any bullet in the preview to edit it.",
+  placeholder: "e.g. cutting load time by 30% for 200k monthly users",
+  needsNumber: "Include a figure (%, $, count, time) — that is the point of the metric.",
+  showMore: (count: number) => `Show ${count} more`,
+  apply: (count: number) => (count ? `Apply to ${count} bullet${count === 1 ? "" : "s"}` : "Apply"),
+  cancel: "Cancel",
+} as const;
+
 export const THEME_SWITCHER_LABEL = "Colour theme";

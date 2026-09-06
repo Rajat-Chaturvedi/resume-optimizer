@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import GapReportPanel from "@/components/GapReportPanel";
+import MetricsWizard from "@/components/MetricsWizard";
 import OptimizationSummary from "@/components/OptimizationSummary";
 import ResumePreview from "@/components/ResumePreview";
 import TemplateGallery from "@/components/TemplateGallery";
@@ -247,6 +248,12 @@ export default function Home() {
               <GapReportPanel
                 report={liveReport ?? optimized.verification}
                 title={liveReport ? REPORT_PANEL.editedTitle : REPORT_PANEL.optimizedTitle}
+              />
+
+              <MetricsWizard
+                resume={editedResume ?? optimized.resume}
+                busy={busy !== null}
+                onApply={setEditedResume}
               />
             </>
           )}
