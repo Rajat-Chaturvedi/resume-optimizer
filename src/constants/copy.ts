@@ -123,13 +123,16 @@ export const SECTION_LABELS = {
 export const METRICS_WIZARD = {
   title: (count: number) => `Add your numbers (${count} bullet${count === 1 ? "" : "s"})`,
   hint:
-    "The optimizer proposes a metric that fits each bullet — you only fill in the figures. Nothing is applied while a blank remains, and you can reword anything afterwards in the preview.",
+    "Each bullet gets a metric that fits what it describes, pre-filled with a typical figure so you can correct rather than compose. The numbers are drafts — they are not your results until you say so.",
   cta: "Suggest metrics for me",
   skipHint: "Prefer to do it yourself? Click any bullet in the preview to edit it.",
-  suggestionHint: "Replace each __ with your real figure. Tap an alternative below a row to switch phrasing.",
+  suggestionHint:
+    "Change any figure that is wrong, tap an alternative phrasing, or clear a row to skip it. Applied bullets stay editable in the preview.",
   placeholder: "e.g. cutting load time by 30%",
   needsNumber: "Include a figure (%, $, count, time) — that is the point of the metric.",
   fillBlanks: "Replace __ with your figure, or clear the row to skip it.",
+  draftTag: "draft",
+  confirmLabel: "I have checked these figures and they reflect my actual results",
   showMore: (count: number) => `Show ${count} more`,
   apply: (count: number) => (count ? `Apply to ${count} bullet${count === 1 ? "" : "s"}` : "Apply"),
   cancel: "Cancel",

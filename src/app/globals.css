@@ -612,6 +612,12 @@ button.primary {
   margin-top: 6px;
 }
 
+.confirm-box {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 .changelog {
   font-size: 13px;
   color: var(--muted);

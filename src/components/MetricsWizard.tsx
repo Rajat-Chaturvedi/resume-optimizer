@@ -36,6 +36,7 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [confirmed, setConfirmed] = useState(false);
 
   const targets = useMemo<Target[]>(
     () =>
@@ -57,9 +58,10 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
   if (targets.length === 0) return null;
 
   const start = () => {
-    // Pre-fill every row with phrasing that matches that bullet, so the user only
-    // types the figures.
+    // Pre-fill every row with phrasing that matches that bullet and a typical
+    // figure, so the user corrects numbers instead of composing sentences.
     setDrafts(Object.fromEntries(targets.map((t) => [t.key, t.suggestions[0]])));
+    setConfirmed(false);
     setOpen(true);
   };
 
@@ -75,6 +77,7 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
       if (bullet) next.experience[roleIndex].bullets[bulletIndex] = withImpact(bullet, value);
     }
     setDrafts({});
+    setConfirmed(false);
     setOpen(false);
     setVisible(PAGE_SIZE);
     onApply(next);
@@ -132,7 +135,9 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
                 {blank && <div className="metric-warning">{METRICS_WIZARD.fillBlanks}</div>}
                 {missingNumber && <div className="metric-warning">{METRICS_WIZARD.needsNumber}</div>}
                 {!blank && !missingNumber && value.trim() && (
-                  <div className="metric-preview">{withImpact(target.text, value)}</div>
+                  <div className="metric-preview">
+                    <span className="badge">{METRICS_WIZARD.draftTag}</span> {withImpact(target.text, value)}
+                  </div>
                 )}
               </div>
             );
@@ -144,8 +149,20 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
             </button>
           )}
 
+          <div className="confirm-box">
+            <label className="chip selectable">
+              <input type="checkbox" checked={confirmed} onChange={() => setConfirmed((c) => !c)} />
+              {METRICS_WIZARD.confirmLabel}
+            </label>
+          </div>
+
           <div className="row" style={{ marginTop: 12 }}>
-            <button type="button" className="primary" disabled={busy || ready.length === 0} onClick={apply}>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || ready.length === 0 || !confirmed}
+              onClick={apply}
+            >
               {METRICS_WIZARD.apply(ready.length)}
             </button>
             <button
@@ -153,6 +170,7 @@ export default function MetricsWizard({ resume, busy, onApply }: Props) {
               disabled={busy}
               onClick={() => {
                 setDrafts({});
+                setConfirmed(false);
                 setOpen(false);
               }}
             >
